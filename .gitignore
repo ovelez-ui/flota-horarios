@@ -1,0 +1,13 @@
+/node_modules
+/.next
+/out
+/build
+.env*.local
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+/.data
+
+# Datos personales (nombres + cédulas de repartidores) — NO versionar.
+# Viven solo en local y en Supabase. El repo usa malla.seed.default.json.
+/src/data/malla.seed.json

@@ -1,0 +1,11 @@
+node_modules
+.next
+.data
+.git
+.gitignore
+*.md
+Dockerfile
+.dockerignore
+.env*
+npm-debug.log*
+scripts/__pycache__
