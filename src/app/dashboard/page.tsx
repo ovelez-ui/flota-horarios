@@ -1,5 +1,10 @@
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
+import { AdminOnly } from "@/components/AdminOnly";
 
 export default function DashboardPage() {
-  return <DashboardTabs />;
+  return (
+    <AdminOnly>
+      <DashboardTabs />
+    </AdminOnly>
+  );
 }

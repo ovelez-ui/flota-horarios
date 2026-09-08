@@ -52,8 +52,8 @@ interface EditState {
   code: string;
 }
 
-/** Malla mensual tipo Gantt editable: clic en celda → asignar turno. */
-export function ScheduleCalendar() {
+/** Malla mensual tipo Gantt. `readOnly` desactiva la edición (vista tiendas). */
+export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   const zones = useFleetStore((s) => s.zones);
   const drivers = useFleetStore((s) => s.drivers);
   const shifts = useFleetStore((s) => s.shifts);
@@ -116,6 +116,7 @@ export function ScheduleCalendar() {
   }, [byDriver, zoneDrivers]);
 
   function openEdit(driver: Driver, date: string, shift: Shift | undefined) {
+    if (readOnly) return;
     setServerError(null);
     setEdit({ driver, date, code: shift ? shift.code : REST_CODE });
   }
@@ -164,9 +165,11 @@ export function ScheduleCalendar() {
             ))}
           </Select>
         </div>
-        <p className="mb-3 flex items-center gap-1 text-xs text-slate-400">
-          <Pencil size={12} /> Haz clic en una celda para editar el turno.
-        </p>
+        {!readOnly && (
+          <p className="mb-3 flex items-center gap-1 text-xs text-slate-400">
+            <Pencil size={12} /> Haz clic en una celda para editar el turno.
+          </p>
+        )}
 
         {/* Navegación por semanas (reduce el scroll horizontal) */}
         <div className="mb-4 flex flex-wrap gap-1.5">
@@ -247,7 +250,8 @@ export function ScheduleCalendar() {
                           key={d}
                           onClick={() => openEdit(driver, d, s)}
                           className={cn(
-                            "cursor-pointer border-b border-l border-slate-100 px-0.5 text-center text-[10px] font-semibold tabular-nums transition hover:ring-2 hover:ring-inset hover:ring-brand-400",
+                            "border-b border-l border-slate-100 px-0.5 text-center text-[10px] font-semibold tabular-nums transition",
+                            !readOnly && "cursor-pointer hover:ring-2 hover:ring-inset hover:ring-brand-400",
                             cellClass(s),
                             hol && "border-l-2 border-l-amber-300",
                           )}

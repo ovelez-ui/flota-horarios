@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Truck, LayoutDashboard, UserSearch, Settings2 } from "lucide-react";
+import { Truck } from "lucide-react";
+import { AppNav } from "@/components/AppNav";
+import { AuthGate } from "@/components/AuthGate";
 import { FleetGate } from "@/components/FleetGate";
 import "./globals.css";
 
@@ -21,30 +23,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </span>
               Flota Horarios
             </Link>
-            <nav className="flex items-center gap-1 text-sm">
-              <Link
-                href="/repartidor"
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-slate-600 hover:bg-slate-100"
-              >
-                <UserSearch size={16} /> Repartidor
-              </Link>
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-slate-600 hover:bg-slate-100"
-              >
-                <LayoutDashboard size={16} /> Dispatcher
-              </Link>
-              <Link
-                href="/admin"
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-slate-600 hover:bg-slate-100"
-              >
-                <Settings2 size={16} /> Admin
-              </Link>
-            </nav>
+            <AppNav />
           </div>
         </header>
         <main className="mx-auto max-w-7xl px-4 py-6">
-          <FleetGate>{children}</FleetGate>
+          <AuthGate>
+            <FleetGate>{children}</FleetGate>
+          </AuthGate>
         </main>
       </body>
     </html>

@@ -17,6 +17,10 @@ export function getSupabase(): SupabaseClient {
   if (!hasSupabase) {
     throw new Error("Supabase no configurado (falta NEXT_PUBLIC_SUPABASE_URL/ANON_KEY).");
   }
-  if (!client) client = createClient(url!, anon!, { auth: { persistSession: false } });
+  if (!client) {
+    client = createClient(url!, anon!, {
+      auth: { persistSession: true, autoRefreshToken: true },
+    });
+  }
   return client;
 }
