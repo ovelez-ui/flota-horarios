@@ -6,7 +6,7 @@ import type { Driver, RuleViolation, Shift, ShiftKind } from "@/types";
 import { REST_CODE } from "@/types";
 import { Badge, Button, Card, CardContent, Field, IconChip, Modal, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
-import { MONTH } from "@/lib/month";
+import { MonthSwitcher } from "./MonthSwitcher";
 import {
   shiftKind,
   isRestCode,
@@ -63,9 +63,10 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   const assign = useFleetStore((s) => s.assign);
   const paint = useFleetStore((s) => s.paint);
   const rules = useFleetStore((s) => s.rules);
+  const month = useFleetStore((s) => s.month);
   const customShiftCodes = useFleetStore((s) => s.customShiftCodes);
 
-  const dates = useMemo(() => datesOfMonth(MONTH.year, MONTH.monthIndex), []);
+  const dates = useMemo(() => datesOfMonth(month.year, month.monthIndex), [month]);
 
   // Agrupa el mes en semanas (lunes a domingo) para navegar por secciones.
   const weeks = useMemo(() => {
@@ -229,9 +230,10 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
       <CardContent className="pt-5">
         <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 font-semibold text-slate-900">
-            <IconChip icon={<CalendarDays size={16} />} /> Malla mensual · {MONTH.label}
+            <IconChip icon={<CalendarDays size={16} />} /> Malla mensual · {month.label}
           </h2>
           <div className="flex flex-wrap items-center gap-2">
+            <MonthSwitcher />
             <Select
               value={zoneId}
               onChange={(e) => { setZoneId(e.target.value); setPosId(""); }}
@@ -352,7 +354,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
                 view === i ? "bg-brand-700 text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200",
               )}
-              title={`${w.range} ${MONTH.label}`}
+              title={`${w.range} ${month.label}`}
             >
               {w.label} <span className="opacity-70">· {w.range}</span>
             </button>

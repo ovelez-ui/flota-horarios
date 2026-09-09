@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { LayoutGrid, CalendarRange, CalendarDays, Wand2, Plane, BarChart3, SlidersHorizontal, Clock, Download } from "lucide-react";
-import { MONTH } from "@/lib/month";
+import { useFleetStore } from "@/hooks/use-shift-assignment";
+import { MonthSwitcher } from "./MonthSwitcher";
 import { cn } from "@/lib/utils";
 import { EntitiesOverview } from "./EntitiesOverview";
 import { Analytics } from "./Analytics";
@@ -31,15 +32,19 @@ const TABS: { id: TabId; label: string; icon: typeof LayoutGrid }[] = [
 /** Panel dispatcher con navegación por secciones (sin scroll largo). */
 export function DashboardTabs() {
   const [tab, setTab] = useState<TabId>("entidades");
+  const month = useFleetStore((s) => s.month);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">Panel de control · Dispatcher</h1>
-        <p className="text-sm text-slate-600">
-          Gestión de la flota ·{" "}
-          <span className="font-medium text-brand-700">{MONTH.label}</span>
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Panel de control · Dispatcher</h1>
+          <p className="text-sm text-slate-600">
+            Gestión de la flota ·{" "}
+            <span className="font-medium text-brand-700">{month.label}</span>
+          </p>
+        </div>
+        <MonthSwitcher />
       </div>
 
       <div className="flex flex-col gap-6 lg:flex-row">

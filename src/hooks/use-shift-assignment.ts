@@ -20,12 +20,12 @@ import {
   type BuildShiftInput,
 } from "@/lib/shift-rules";
 import { weekdayName } from "@/lib/date-utils";
-import { MONTH_PREFIX } from "@/lib/month";
+import { DEFAULT_MONTH, setActiveMonth, type MonthDef } from "@/lib/month";
 import { source } from "@/lib/data-source";
 import { parseShiftCode, isRestCode, distinctWorkCodes } from "@/lib/shift-catalog";
 
-/** Acota los turnos al mes de planificación vigente. */
-const scopeToMonth = (shifts: Shift[]) => shifts.filter((s) => s.date.startsWith(MONTH_PREFIX));
+/** Acota los turnos al mes de planificación indicado. */
+const scopeToMonth = (shifts: Shift[], prefix: string) => shifts.filter((s) => s.date.startsWith(prefix));
 
 // Reglas de asignación persistidas en el navegador del coordinador.
 const RULES_KEY = "flota-rules-v1";
@@ -78,6 +78,8 @@ interface FleetState {
   drivers: Driver[];
   shifts: Shift[];
   rules: AssignmentRules;
+  /** Mes de planificación activo. */
+  month: MonthDef;
 
   ready: boolean;
   loading: boolean;
@@ -86,6 +88,8 @@ interface FleetState {
   // --- Ciclo de vida ---
   bootstrap: () => Promise<void>;
   refresh: () => Promise<void>;
+  /** Cambia el mes activo y recarga sus turnos. */
+  setMonth: (prefix: string) => Promise<void>;
 
   // --- Consultas (sobre el caché en memoria) ---
   driverShifts: (driverId: string) => Shift[];
@@ -126,6 +130,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
   drivers: [],
   shifts: [],
   rules: loadRules(),
+  month: DEFAULT_MONTH,
   customShiftCodes: loadCustomCodes(),
   ready: false,
   loading: false,
@@ -141,7 +146,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
           zones: data.zones,
           pointsOfSale: data.pointsOfSale,
           drivers: data.drivers,
-          shifts: scopeToMonth(data.shifts),
+          shifts: scopeToMonth(data.shifts, get().month.prefix),
           ready: true,
           loading: false,
         });
@@ -162,7 +167,27 @@ export const useFleetStore = create<FleetState>((set, get) => ({
         zones: data.zones,
         pointsOfSale: data.pointsOfSale,
         drivers: data.drivers,
-        shifts: scopeToMonth(data.shifts),
+        shifts: scopeToMonth(data.shifts, get().month.prefix),
+        loading: false,
+      });
+    } catch (e) {
+      set({ loading: false, error: e instanceof Error ? e.message : "Error de carga." });
+    }
+  },
+
+  setMonth: async (prefix) => {
+    const m = setActiveMonth(prefix);
+    if (m.prefix === get().month.prefix && get().ready) return;
+    // Al cambiar de mes vaciamos la malla para no mostrar datos del mes anterior
+    // mientras llega la nueva consulta al backend.
+    set({ month: m, shifts: [], loading: true, error: null });
+    try {
+      const data = await source.bootstrap();
+      set({
+        zones: data.zones,
+        pointsOfSale: data.pointsOfSale,
+        drivers: data.drivers,
+        shifts: scopeToMonth(data.shifts, m.prefix),
         loading: false,
       });
     } catch (e) {

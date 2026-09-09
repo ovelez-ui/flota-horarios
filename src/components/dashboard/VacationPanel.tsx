@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarPlus, CheckCircle2, Plane } from "lucide-react";
 import { Button, Card, CardContent, Field, IconChip, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
-import { MONTH } from "@/lib/month";
 import { SPECIAL_CODES } from "@/lib/shift-catalog";
 import { datesOfMonth, shortLabel, weekdayName, datesBetween } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
@@ -16,8 +15,9 @@ const NOVELTIES = ["VACAC", "INC", "COMP", "LIC", "FAM"] as const;
 export function VacationPanel() {
   const drivers = useFleetStore((s) => s.drivers);
   const assignRange = useFleetStore((s) => s.assignRange);
+  const month = useFleetStore((s) => s.month);
 
-  const dates = useMemo(() => datesOfMonth(MONTH.year, MONTH.monthIndex), []);
+  const dates = useMemo(() => datesOfMonth(month.year, month.monthIndex), [month]);
   const [driverId, setDriverId] = useState(drivers[0]?.id ?? "");
   const [code, setCode] = useState<string>("VACAC");
   const [from, setFrom] = useState(dates[0]!);
@@ -25,6 +25,13 @@ export function VacationPanel() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Reencuadra el rango al cambiar de mes.
+  useEffect(() => {
+    if (!dates.includes(from)) setFrom(dates[0]!);
+    if (!dates.includes(to)) setTo(dates[Math.min(6, dates.length - 1)]!);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dates]);
 
   const dayCount = useMemo(() => datesBetween(from, to).length, [from, to]);
   const meta = SPECIAL_CODES[code]!;

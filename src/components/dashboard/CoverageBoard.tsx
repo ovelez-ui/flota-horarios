@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarRange, AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { ShiftKind } from "@/types";
 import { Card, CardContent, IconChip, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
-import { MONTH } from "@/lib/month";
 import { shiftKind, isRestCode } from "@/lib/shift-catalog";
 import { datesOfMonth, shortLabel, weekdayName } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
@@ -23,10 +22,17 @@ export function CoverageBoard() {
   const pointsOfSale = useFleetStore((s) => s.pointsOfSale);
   const drivers = useFleetStore((s) => s.drivers);
   const shifts = useFleetStore((s) => s.shifts);
+  const month = useFleetStore((s) => s.month);
 
-  const dates = useMemo(() => datesOfMonth(MONTH.year, MONTH.monthIndex), []);
+  const dates = useMemo(() => datesOfMonth(month.year, month.monthIndex), [month]);
   const [date, setDate] = useState(dates[0]!);
   const [zoneId, setZoneId] = useState(zones[0]?.id ?? "");
+
+  // Reencuadra el día seleccionado al cambiar de mes.
+  useEffect(() => {
+    if (!dates.includes(date)) setDate(dates[0]!);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dates]);
 
   const driverIds = useMemo(() => new Set(drivers.map((d) => d.id)), [drivers]);
   const visiblePos = useMemo(

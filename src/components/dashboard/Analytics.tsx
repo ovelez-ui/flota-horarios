@@ -8,7 +8,6 @@ import {
 import type { Driver, Shift, ShiftKind } from "@/types";
 import { Card, CardContent, IconChip, Input, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
-import { MONTH } from "@/lib/month";
 import { totalHours, workedDays, restDays } from "@/lib/shift-rules";
 import { shiftKind, isRestCode, specialMeta, SPECIAL_CODE_LIST, SPECIAL_CODES } from "@/lib/shift-catalog";
 import {
@@ -117,7 +116,8 @@ function KindDistribution({ shifts }: { shifts: Shift[] }) {
 // ---------------------------------------------------------------------------
 
 function DriverDetail({ driver, shifts, onClose }: { driver: Driver; shifts: Shift[]; onClose: () => void }) {
-  const dates = useMemo(() => datesOfMonth(MONTH.year, MONTH.monthIndex), []);
+  const month = useFleetStore((s) => s.month);
+  const dates = useMemo(() => datesOfMonth(month.year, month.monthIndex), [month]);
   const weeks = useMemo(() => monthWeeks(dates), [dates]);
   const hours = totalHours(shifts);
   const cap = driver.monthlyHourCap;
@@ -205,8 +205,9 @@ export function Analytics() {
   const pointsOfSale = useFleetStore((s) => s.pointsOfSale);
   const drivers = useFleetStore((s) => s.drivers);
   const shifts = useFleetStore((s) => s.shifts);
+  const month = useFleetStore((s) => s.month);
 
-  const dates = useMemo(() => datesOfMonth(MONTH.year, MONTH.monthIndex), []);
+  const dates = useMemo(() => datesOfMonth(month.year, month.monthIndex), [month]);
   const [zoneId, setZoneId] = useState(zones[0]?.id ?? "");
   const [query, setQuery] = useState("");
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
@@ -242,7 +243,7 @@ export function Analytics() {
         <CardContent className="pt-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="flex items-center gap-2 font-semibold text-slate-900">
-              <IconChip icon={<BarChart3 size={16} />} /> Analítica por zona · {MONTH.label}
+              <IconChip icon={<BarChart3 size={16} />} /> Analítica por zona · {month.label}
             </h2>
             <Select value={zoneId} onChange={(e) => { setZoneId(e.target.value); setSelectedDriverId(null); }} className="h-9 w-auto">
               {zones.map((z) => (

@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { Download, FileSpreadsheet, Users, CalendarClock } from "lucide-react";
 import { Button, Card, CardContent, Field, IconChip, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
-import { MONTH } from "@/lib/month";
 import { isRestCode, codeLabel } from "@/lib/shift-catalog";
 import { sundayCompensationAlerts } from "@/lib/shift-rules";
 import { parseISO, weekdayName } from "@/lib/date-utils";
@@ -20,6 +19,7 @@ export function ReportsPanel() {
   const drivers = useFleetStore((s) => s.drivers);
   const shifts = useFleetStore((s) => s.shifts);
   const rules = useFleetStore((s) => s.rules);
+  const month = useFleetStore((s) => s.month);
 
   const [zoneId, setZoneId] = useState<string>(""); // "" = todas
   const [done, setDone] = useState<string | null>(null);
@@ -35,7 +35,7 @@ export function ReportsPanel() {
     return { drivers: ds, shifts: ss };
   }, [drivers, shifts, zoneId]);
 
-  const suffix = `${MONTH.label.replace(/\s+/g, "-")}${zoneId ? `_${(zoneName.get(zoneId) ?? "zona").replace(/\s+/g, "-")}` : ""}`;
+  const suffix = `${month.label.replace(/\s+/g, "-")}${zoneId ? `_${(zoneName.get(zoneId) ?? "zona").replace(/\s+/g, "-")}` : ""}`;
 
   function flash(msg: string) {
     setDone(msg);
@@ -122,7 +122,7 @@ export function ReportsPanel() {
         <p className="mb-4 text-sm text-slate-500">
           Descarga la información en formato CSV (compatible con Excel). Los reportes usan el
           mes de planificación vigente ·{" "}
-          <span className="font-medium text-slate-700">{MONTH.label}</span>.
+          <span className="font-medium text-slate-700">{month.label}</span>.
         </p>
 
         <div className="mb-4 max-w-xs">

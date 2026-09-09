@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Wand2, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import type { RuleViolation } from "@/types";
 import { Button, Card, CardContent, IconChip, Select, Badge } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
-import { MONTH } from "@/lib/month";
 import { shiftCodeOptions, codeLabel } from "@/lib/shift-catalog";
 import { datesOfMonth, shortLabel, weekdayName } from "@/lib/date-utils";
 
@@ -36,7 +35,8 @@ export function AssignmentPanel() {
   const assign = useFleetStore((s) => s.assign);
   const metrics = useFleetStore((s) => s.metrics);
 
-  const dates = useMemo(() => datesOfMonth(MONTH.year, MONTH.monthIndex), []);
+  const month = useFleetStore((s) => s.month);
+  const dates = useMemo(() => datesOfMonth(month.year, month.monthIndex), [month]);
   const customShiftCodes = useFleetStore((s) => s.customShiftCodes);
   const codes = useMemo(() => shiftCodeOptions(shifts, customShiftCodes), [shifts, customShiftCodes]);
 
@@ -44,6 +44,12 @@ export function AssignmentPanel() {
   const [date, setDate] = useState(dates[Math.min(9, dates.length - 1)]!);
   const [code, setCode] = useState(codes[0] ?? "DESC");
   const [applied, setApplied] = useState<string | null>(null);
+
+  // Al cambiar de mes, reencuadra la fecha seleccionada dentro del nuevo mes.
+  useEffect(() => {
+    if (!dates.includes(date)) setDate(dates[Math.min(9, dates.length - 1)]!);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dates]);
 
   const driver = drivers.find((d) => d.id === driverId);
 
