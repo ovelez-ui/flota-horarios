@@ -64,6 +64,35 @@ export function RulesAdmin() {
           Advertir cuando se asigna fuera de la zona base del repartidor
         </label>
 
+        {/* Compensatorio por domingo trabajado */}
+        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <input
+              type="checkbox"
+              checked={rules.requireSundayCompensation}
+              onChange={(e) => setRules({ requireSundayCompensation: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-600"
+            />
+            Exigir compensatorio por domingo trabajado
+          </label>
+          <div className="mt-3 flex flex-wrap items-end gap-3">
+            <Field label="Días para compensar" hint="Ventana tras el domingo dentro de la que debe caer el compensatorio.">
+              <Input
+                type="number"
+                min={1}
+                max={30}
+                disabled={!rules.requireSundayCompensation}
+                value={rules.sundayCompensationDays}
+                onChange={(e) => setRules({ sundayCompensationDays: num(e.target.value, 1) })}
+                className="w-28"
+              />
+            </Field>
+            <p className="mb-2 text-xs text-slate-500">
+              Al asignar un turno en domingo se muestra una alerta hasta registrar el compensatorio (COMP) en los siguientes {rules.sundayCompensationDays} días.
+            </p>
+          </div>
+        </div>
+
         <p className="mt-5 flex items-center gap-2 rounded-lg bg-emerald-50 p-2.5 text-sm text-emerald-700">
           <CheckCircle2 size={16} /> Los cambios aplican de inmediato a la validación de turnos.
         </p>

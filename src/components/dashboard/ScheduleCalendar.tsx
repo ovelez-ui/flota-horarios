@@ -17,6 +17,7 @@ import {
   SPECIAL_CODES,
 } from "@/lib/shift-catalog";
 import { datesOfMonth, parseISO, isWeekend, weekdayName, shortLabel } from "@/lib/date-utils";
+import { sundayCompensationAlerts } from "@/lib/shift-rules";
 import { isHoliday, holidayName } from "@/lib/holidays";
 import { cn } from "@/lib/utils";
 
@@ -60,6 +61,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   const preview = useFleetStore((s) => s.preview);
   const assign = useFleetStore((s) => s.assign);
   const paint = useFleetStore((s) => s.paint);
+  const rules = useFleetStore((s) => s.rules);
   const customShiftCodes = useFleetStore((s) => s.customShiftCodes);
 
   const dates = useMemo(() => datesOfMonth(MONTH.year, MONTH.monthIndex), []);
@@ -129,6 +131,15 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
     () => drivers.filter((d) => d.zoneId === zoneId),
     [drivers, zoneId],
   );
+
+  // Alerta: domingos trabajados en la zona sin compensatorio dentro de la ventana.
+  const sundayAlerts = useMemo(() => {
+    const ids = new Set(zoneDrivers.map((d) => d.id));
+    const nameById = new Map(zoneDrivers.map((d) => [d.id, d.name]));
+    return sundayCompensationAlerts(shifts.filter((s) => ids.has(s.driverId)), rules)
+      .filter((a) => !a.compensated)
+      .map((a) => ({ ...a, name: nameById.get(a.driverId) ?? a.driverId }));
+  }, [shifts, zoneDrivers, rules]);
 
   // driverId -> (date -> shift)
   const byDriver = useMemo(() => {
@@ -205,6 +216,36 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
             ))}
           </Select>
         </div>
+
+        {sundayAlerts.length > 0 && (
+          <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3">
+            <p className="flex items-center gap-2 text-sm font-semibold text-amber-800">
+              <AlertTriangle size={16} className="shrink-0" />
+              Compensatorios pendientes por domingo trabajado ({sundayAlerts.length})
+            </p>
+            <p className="mt-0.5 text-xs text-amber-700/80">
+              {readOnly
+                ? "Estos repartidores trabajaron domingo y aún no tienen compensatorio programado."
+                : `Asigna un compensatorio (COMP) dentro de los ${rules.sundayCompensationDays} días siguientes al domingo.`}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {sundayAlerts.map((a) => (
+                <span
+                  key={`${a.driverId}-${a.sundayDate}`}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-white px-2 py-1 text-[11px] font-medium text-amber-800 ring-1 ring-inset ring-amber-200"
+                  title={`Domingo ${shortLabel(a.sundayDate)} · compensar antes del ${shortLabel(a.dueBy)}`}
+                >
+                  <span className="font-semibold">{a.name}</span>
+                  <span className="text-amber-500">·</span>
+                  dom {shortLabel(a.sundayDate)}
+                  <span className="text-amber-500">→</span>
+                  vence {shortLabel(a.dueBy)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {!readOnly && (
           <div className="mb-3 rounded-lg border border-slate-200 bg-slate-50/60 p-2.5">
             <div className="flex flex-wrap items-center gap-1.5">

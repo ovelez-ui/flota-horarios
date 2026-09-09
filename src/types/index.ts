@@ -126,6 +126,7 @@ export type RuleCode =
   | "MIN_REST_BETWEEN"
   | "MAX_CONSECUTIVE"
   | "ZONE_MISMATCH"
+  | "SUNDAY_COMP"
   | "DRIVER_UNAVAILABLE";
 
 export interface RuleViolation {
@@ -145,6 +146,10 @@ export interface AssignmentRules {
   minRestDaysPerWeek: number;
   /** Si es true, asignar fuera de la zona base genera una advertencia. */
   enforceZoneMatch: boolean;
+  /** Si es true, trabajar un domingo exige un compensatorio dentro de la ventana siguiente. */
+  requireSundayCompensation: boolean;
+  /** Días siguientes al domingo dentro de los que debe caer el compensatorio. */
+  sundayCompensationDays: number;
 }
 
 export const DEFAULT_RULES: AssignmentRules = {
@@ -152,4 +157,6 @@ export const DEFAULT_RULES: AssignmentRules = {
   maxConsecutiveDays: 6,
   minRestDaysPerWeek: 1,
   enforceZoneMatch: true,
+  requireSundayCompensation: true,
+  sundayCompensationDays: 6,
 };

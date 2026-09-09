@@ -6,7 +6,25 @@ import type {
 } from "@/types";
 import { DEFAULT_RULES } from "@/types";
 import { parseShiftCode, isRestCode } from "@/lib/shift-catalog";
-import { daysBetween } from "@/lib/date-utils";
+import { daysBetween, parseISO } from "@/lib/date-utils";
+
+/** Código de novedad que representa un día compensatorio. */
+const COMP_CODE = "COMP";
+
+/** true si la fecha ISO cae en domingo. */
+function isSunday(isoDate: string): boolean {
+  return parseISO(isoDate).getDay() === 0;
+}
+
+/**
+ * true si existe un compensatorio (COMP) entre el día siguiente al domingo
+ * y `days` días después (ventana de compensación).
+ */
+function hasCompensationWithin(shifts: Shift[], sundayISO: string, days: number): boolean {
+  const start = shiftDateBy(sundayISO, 1);
+  const end = shiftDateBy(sundayISO, days);
+  return shifts.some((s) => s.code === COMP_CODE && s.date >= start && s.date <= end);
+}
 
 // ---------------------------------------------------------------------------
 // Métricas de un conjunto de turnos
@@ -166,7 +184,67 @@ export function validateAssignment(ctx: AssignmentContext): RuleViolation[] {
     });
   }
 
+  // 7. Compensatorio por domingo trabajado.
+  if (rules.requireSundayCompensation && isSunday(candidate.date)) {
+    const days = rules.sundayCompensationDays;
+    if (!hasCompensationWithin(others, candidate.date, days)) {
+      violations.push({
+        code: "SUNDAY_COMP",
+        severity: "warning",
+        message: `Domingo trabajado: falta asignar el compensatorio dentro de los ${days} días siguientes.`,
+      });
+    }
+  }
+
   return violations;
+}
+
+// ---------------------------------------------------------------------------
+// Alertas de compensación de domingo (barrido mensual)
+// ---------------------------------------------------------------------------
+
+export interface SundayCompAlert {
+  driverId: string;
+  /** Domingo trabajado (ISO). */
+  sundayDate: string;
+  /** Fecha límite para el compensatorio (domingo + ventana). */
+  dueBy: string;
+  /** true si ya tiene un compensatorio dentro de la ventana. */
+  compensated: boolean;
+}
+
+/**
+ * Recorre todos los turnos y detecta domingos trabajados, indicando si ya
+ * cuentan con un compensatorio dentro de la ventana configurada.
+ */
+export function sundayCompensationAlerts(
+  shifts: Shift[],
+  rules: Pick<AssignmentRules, "requireSundayCompensation" | "sundayCompensationDays">,
+): SundayCompAlert[] {
+  if (!rules.requireSundayCompensation) return [];
+  const days = rules.sundayCompensationDays;
+
+  const byDriver = new Map<string, Shift[]>();
+  for (const s of shifts) {
+    const arr = byDriver.get(s.driverId) ?? [];
+    arr.push(s);
+    byDriver.set(s.driverId, arr);
+  }
+
+  const alerts: SundayCompAlert[] = [];
+  for (const [driverId, list] of byDriver) {
+    for (const s of list) {
+      if (isRestCode(s.code) || !isSunday(s.date)) continue;
+      alerts.push({
+        driverId,
+        sundayDate: s.date,
+        dueBy: shiftDateBy(s.date, days),
+        compensated: hasCompensationWithin(list, s.date, days),
+      });
+    }
+  }
+  // Orden cronológico por domingo.
+  return alerts.sort((a, b) => a.sundayDate.localeCompare(b.sundayDate));
 }
 
 /** Cuenta la racha de días trabajados consecutivos que incluye al candidato. */
