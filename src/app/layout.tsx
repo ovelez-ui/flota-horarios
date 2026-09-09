@@ -16,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es">
       <body className="min-h-full font-sans">
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
-          <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
+          <div className="mx-auto flex h-14 max-w-[1760px] items-center justify-between px-4">
             <Link href="/" className="flex shrink-0 items-center gap-2 whitespace-nowrap font-semibold text-brand-700">
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-700 text-white">
                 <Truck size={18} />
@@ -26,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <AppNav />
           </div>
         </header>
-        <main className="mx-auto max-w-7xl px-4 py-6">
+        <main className="mx-auto max-w-[1760px] px-4 py-6">
           <AuthGate>
             <FleetGate>{children}</FleetGate>
           </AuthGate>

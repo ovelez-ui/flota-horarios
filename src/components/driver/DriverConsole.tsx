@@ -40,7 +40,7 @@ export function DriverConsole() {
   const notFound = query !== null && summary === null;
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <div>
         <h1 className="text-xl font-bold text-slate-900">Consulta de turnos</h1>
         <p className="text-sm text-slate-600">

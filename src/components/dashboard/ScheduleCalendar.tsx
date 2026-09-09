@@ -43,8 +43,8 @@ function cellLabel(shift: Shift): string {
   return shift.code; // ej. "08-15" (hora inicio - hora fin)
 }
 
-// Ancho mínimo de columna: suficiente para "08-15".
-const COL_MIN = 48;
+// Ancho mínimo de columna: suficiente para "08-15" (compacto para que quepa el mes).
+const COL_MIN = 40;
 
 interface EditState {
   driver: Driver;
@@ -313,7 +313,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
                 const m = byDriver.get(driver.id);
                 return (
                   <tr key={driver.id} className="hover:bg-slate-50/50">
-                    <td className="sticky left-0 z-10 max-w-[108px] truncate border-b border-r border-slate-100 bg-white px-2 py-1.5 font-medium text-slate-700 sm:max-w-[220px] sm:px-3" title={driver.name}>
+                    <td className="sticky left-0 z-10 max-w-[108px] truncate border-b border-r border-slate-100 bg-white px-2 py-1.5 font-medium text-slate-700 sm:max-w-[160px] sm:px-3" title={driver.name}>
                       {driver.name}
                     </td>
                     {visibleDates.map((d) => {
