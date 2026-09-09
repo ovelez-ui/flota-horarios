@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useRef, useEffect } from "react";
-import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2 } from "lucide-react";
+import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2, ChevronDown, ChevronRight } from "lucide-react";
 import type { Driver, RuleViolation, Shift, ShiftKind } from "@/types";
 import { REST_CODE } from "@/types";
 import { Badge, Button, Card, CardContent, Field, IconChip, Modal, Select } from "@/components/ui";
@@ -83,6 +83,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
 
   const [zoneId, setZoneId] = useState(zones[0]?.id ?? "");
   const [posId, setPosId] = useState<string>(""); // "" = todos los puntos de venta
+  const [showComp, setShowComp] = useState(false); // detalle de compensatorios pendientes
   const [view, setView] = useState<number | "all">(0); // índice de semana o "all"
   const [edit, setEdit] = useState<EditState | null>(null);
   const [saving, setSaving] = useState(false);
@@ -144,12 +145,21 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   );
 
   // Alerta: domingos trabajados en la zona sin compensatorio dentro de la ventana.
-  const sundayAlerts = useMemo(() => {
+  // Se agrupa por repartidor para no saturar la malla.
+  const compAlert = useMemo(() => {
     const ids = new Set(zoneDrivers.map((d) => d.id));
     const nameById = new Map(zoneDrivers.map((d) => [d.id, d.name]));
-    return sundayCompensationAlerts(shifts.filter((s) => ids.has(s.driverId)), rules)
-      .filter((a) => !a.compensated)
-      .map((a) => ({ ...a, name: nameById.get(a.driverId) ?? a.driverId }));
+    const pending = sundayCompensationAlerts(shifts.filter((s) => ids.has(s.driverId)), rules)
+      .filter((a) => !a.compensated);
+
+    const groups = new Map<string, { name: string; items: { sundayDate: string; dueBy: string }[] }>();
+    for (const a of pending) {
+      const g = groups.get(a.driverId) ?? { name: nameById.get(a.driverId) ?? a.driverId, items: [] };
+      g.items.push({ sundayDate: a.sundayDate, dueBy: a.dueBy });
+      groups.set(a.driverId, g);
+    }
+    const byDriver = [...groups.values()].sort((a, b) => a.name.localeCompare(b.name));
+    return { total: pending.length, drivers: byDriver };
   }, [shifts, zoneDrivers, rules]);
 
   // driverId -> (date -> shift)
@@ -246,32 +256,48 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
           </div>
         </div>
 
-        {sundayAlerts.length > 0 && (
-          <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3">
-            <p className="flex items-center gap-2 text-sm font-semibold text-amber-800">
-              <AlertTriangle size={16} className="shrink-0" />
-              Compensatorios pendientes por domingo trabajado ({sundayAlerts.length})
-            </p>
-            <p className="mt-0.5 text-xs text-amber-700/80">
-              {readOnly
-                ? "Estos repartidores trabajaron domingo y aún no tienen compensatorio programado."
-                : `Asigna un compensatorio (COMP) dentro de los ${rules.sundayCompensationDays} días siguientes al domingo.`}
-            </p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {sundayAlerts.map((a) => (
-                <span
-                  key={`${a.driverId}-${a.sundayDate}`}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-white px-2 py-1 text-[11px] font-medium text-amber-800 ring-1 ring-inset ring-amber-200"
-                  title={`Domingo ${shortLabel(a.sundayDate)} · compensar antes del ${shortLabel(a.dueBy)}`}
-                >
-                  <span className="font-semibold">{a.name}</span>
-                  <span className="text-amber-500">·</span>
-                  dom {shortLabel(a.sundayDate)}
-                  <span className="text-amber-500">→</span>
-                  vence {shortLabel(a.dueBy)}
-                </span>
-              ))}
-            </div>
+        {compAlert.total > 0 && (
+          <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50">
+            <button
+              type="button"
+              onClick={() => setShowComp((v) => !v)}
+              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
+            >
+              <span className="flex flex-wrap items-center gap-x-2 text-sm font-semibold text-amber-800">
+                <AlertTriangle size={16} className="shrink-0" />
+                Compensatorios pendientes por domingo ({compAlert.total})
+                <span className="font-normal text-amber-700/70">· {compAlert.drivers.length} repartidor(es)</span>
+              </span>
+              <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-amber-700">
+                {showComp ? "Ocultar" : "Ver detalle"}
+                {showComp ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </span>
+            </button>
+            {showComp && (
+              <div className="max-h-44 overflow-y-auto border-t border-amber-200 px-3 py-2">
+                <p className="mb-2 text-xs text-amber-700/80">
+                  {readOnly
+                    ? "Domingos trabajados aún sin compensatorio programado."
+                    : `Asigna un compensatorio (COMP) dentro de los ${rules.sundayCompensationDays} días siguientes al domingo.`}
+                </p>
+                <ul className="space-y-1.5">
+                  {compAlert.drivers.map((d) => (
+                    <li key={d.name} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                      <span className="min-w-[10rem] font-semibold text-amber-900">{d.name}</span>
+                      {d.items.map((it) => (
+                        <span
+                          key={it.sundayDate}
+                          className="inline-flex items-center rounded bg-white px-1.5 py-0.5 font-medium text-amber-800 ring-1 ring-inset ring-amber-200"
+                          title={`Domingo ${shortLabel(it.sundayDate)} · compensar antes del ${shortLabel(it.dueBy)}`}
+                        >
+                          {shortLabel(it.sundayDate)}
+                        </span>
+                      ))}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
