@@ -14,7 +14,8 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
   return (
     <div
       className={cn(
-        "rounded-2xl border border-slate-200/70 bg-white shadow-card",
+        "group glass rounded-2xl border border-white/60 shadow-card ring-1 ring-slate-900/[0.03]",
+        "transition-shadow duration-300 hover:shadow-soft",
         className,
       )}
       {...props}
@@ -36,18 +37,34 @@ export function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDi
   return <div className={cn("p-5 pt-0", className)} {...props} />;
 }
 
-/** Ícono dentro de un "chip" de color, para encabezados de sección. */
+/**
+ * Ícono dentro de un "chip" para encabezados de sección.
+ * - variant "gradient" (por defecto): chip premium con degradado de marca y glow.
+ * - variant "soft": chip claro tintado (útil sobre fondos oscuros o para variar acento).
+ */
 export function IconChip({
   icon,
+  variant = "gradient",
   tint = "bg-brand-50 text-brand-700 ring-brand-100",
   className,
 }: {
   icon: React.ReactNode;
+  variant?: "gradient" | "soft";
   tint?: string;
   className?: string;
 }) {
+  const base = "grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-transform duration-200 group-hover:scale-105";
+  if (variant === "soft") {
+    return <span className={cn(base, "ring-1 ring-inset", tint, className)}>{icon}</span>;
+  }
   return (
-    <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-xl ring-1 ring-inset", tint, className)}>
+    <span
+      className={cn(
+        base,
+        "bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 text-white shadow-glow ring-1 ring-inset ring-white/20",
+        className,
+      )}
+    >
       {icon}
     </span>
   );
@@ -210,11 +227,11 @@ export function Modal({
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/30 p-4 backdrop-blur-sm sm:items-center"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-xl bg-white shadow-xl"
+        className="w-full max-w-lg rounded-2xl border border-white/70 bg-white/95 shadow-pop backdrop-blur-md animate-fade-rise"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">

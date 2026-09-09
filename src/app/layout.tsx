@@ -15,11 +15,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <body className="min-h-full font-sans">
-        <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/80 shadow-[0_1px_3px_rgb(15_23_42/0.04)] backdrop-blur-md">
+        <header className="glass sticky top-0 z-20 border-b border-white/60 shadow-[0_1px_3px_rgb(15_23_42/0.04)]">
           <div className="mx-auto flex h-14 max-w-[1760px] items-center justify-between px-4">
-            <Link href="/" className="flex shrink-0 items-center gap-2 whitespace-nowrap font-semibold text-brand-800">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 text-white shadow-sm">
-                <Truck size={18} />
+            <Link href="/" className="group flex shrink-0 items-center gap-2 whitespace-nowrap font-semibold text-brand-800">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 text-white shadow-glow ring-1 ring-inset ring-white/20 transition-transform duration-200 group-hover:scale-105">
+                <Truck size={18} strokeWidth={2.25} />
               </span>
               <span className="hidden sm:inline">Flota Horarios</span>
             </Link>
