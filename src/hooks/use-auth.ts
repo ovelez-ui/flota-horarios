@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { hasSupabase, getSupabase } from "@/lib/supabase";
 
-export type Role = "admin" | "tienda";
+export type Role = "admin" | "supervisor" | "tienda";
 
 interface AuthState {
   ready: boolean;
@@ -30,7 +30,9 @@ async function loadRole(userId: string): Promise<Role> {
     getSupabase().from("profiles").select("role").eq("id", userId).maybeSingle())();
   const res = await withTimeout(query, 7000);
   const role = (res as { data?: { role?: string } } | null)?.data?.role;
-  return role === "admin" ? "admin" : "tienda";
+  if (role === "admin") return "admin";
+  if (role === "supervisor") return "supervisor";
+  return "tienda";
 }
 
 let initialized = false;

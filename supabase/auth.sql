@@ -2,12 +2,16 @@
 -- Ejecutar en el SQL Editor DESPUÉS de schema.sql.
 -- Cierra el acceso anónimo: a partir de aquí la app exige iniciar sesión.
 
--- 1. Perfiles con rol (admin | tienda). Rol por defecto: tienda (menor privilegio).
+-- 1. Perfiles con rol (admin | supervisor | tienda). Rol por defecto: tienda.
+--    admin: ve y edita todo. supervisor: ve todo, no edita. tienda: calendario + repartidor.
 create table if not exists public.profiles (
   id    uuid primary key references auth.users(id) on delete cascade,
   email text,
-  role  text not null default 'tienda' check (role in ('admin', 'tienda'))
+  role  text not null default 'tienda' check (role in ('admin', 'supervisor', 'tienda'))
 );
+-- Si la tabla ya existía con el CHECK anterior, amplía los roles permitidos:
+alter table public.profiles drop constraint if exists profiles_role_check;
+alter table public.profiles add constraint profiles_role_check check (role in ('admin', 'supervisor', 'tienda'));
 
 alter table public.profiles enable row level security;
 drop policy if exists "profiles_select_own" on public.profiles;
@@ -54,3 +58,7 @@ end $$;
 -- 5. Marca al coordinador como admin (ajusta el correo).
 --    (El resto de cuentas quedan como 'tienda' automáticamente.)
 -- update public.profiles set role = 'admin' where email = 'ovelez@pasteur.com.co';
+
+-- 6. Marca un supervisor (solo lectura: ve todo, no edita). Ajusta el correo.
+--    El perfil se crea al registrar el usuario en Auth; luego ejecuta:
+-- update public.profiles set role = 'supervisor' where email = 'supervisor@pasteur.com.co';

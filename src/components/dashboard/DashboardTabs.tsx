@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LayoutGrid, CalendarRange, CalendarDays, Wand2, Plane, BarChart3, SlidersHorizontal, Clock, Download } from "lucide-react";
+import { LayoutGrid, CalendarRange, CalendarDays, Wand2, Plane, BarChart3, SlidersHorizontal, Clock, Download, Eye } from "lucide-react";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { MonthSwitcher } from "./MonthSwitcher";
 import { cn } from "@/lib/utils";
@@ -17,20 +17,26 @@ import { ReportsPanel } from "./ReportsPanel";
 
 type TabId = "entidades" | "analitica" | "cobertura" | "calendario" | "asignar" | "vacaciones" | "horarios" | "reglas" | "reportes";
 
-const TABS: { id: TabId; label: string; icon: typeof LayoutGrid }[] = [
+/** `editing: true` marca las secciones que modifican datos (ocultas en solo lectura). */
+const TABS: { id: TabId; label: string; icon: typeof LayoutGrid; editing?: boolean }[] = [
   { id: "entidades", label: "Entidades", icon: LayoutGrid },
   { id: "analitica", label: "Analítica", icon: BarChart3 },
   { id: "cobertura", label: "Cobertura", icon: CalendarRange },
   { id: "calendario", label: "Calendario", icon: CalendarDays },
-  { id: "asignar", label: "Asignación", icon: Wand2 },
-  { id: "vacaciones", label: "Vacaciones", icon: Plane },
-  { id: "horarios", label: "Horarios", icon: Clock },
-  { id: "reglas", label: "Reglas", icon: SlidersHorizontal },
+  { id: "asignar", label: "Asignación", icon: Wand2, editing: true },
+  { id: "vacaciones", label: "Vacaciones", icon: Plane, editing: true },
+  { id: "horarios", label: "Horarios", icon: Clock, editing: true },
+  { id: "reglas", label: "Reglas", icon: SlidersHorizontal, editing: true },
   { id: "reportes", label: "Reportes", icon: Download },
 ];
 
-/** Panel dispatcher con navegación por secciones (sin scroll largo). */
-export function DashboardTabs() {
+/**
+ * Panel dispatcher con navegación por secciones.
+ * `readOnly` (supervisores): oculta las secciones de edición y muestra el
+ * calendario en modo consulta.
+ */
+export function DashboardTabs({ readOnly = false }: { readOnly?: boolean }) {
+  const tabs = readOnly ? TABS.filter((t) => !t.editing) : TABS;
   const [tab, setTab] = useState<TabId>("entidades");
   const month = useFleetStore((s) => s.month);
 
@@ -38,9 +44,16 @@ export function DashboardTabs() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Panel de control · Dispatcher</h1>
+          <h1 className="flex flex-wrap items-center gap-2 text-xl font-bold text-slate-900">
+            Panel de control · {readOnly ? "Supervisor" : "Dispatcher"}
+            {readOnly && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-200">
+                <Eye size={12} /> Solo lectura
+              </span>
+            )}
+          </h1>
           <p className="text-sm text-slate-600">
-            Gestión de la flota ·{" "}
+            {readOnly ? "Visualización de la flota" : "Gestión de la flota"} ·{" "}
             <span className="font-medium text-brand-700">{month.label}</span>
           </p>
         </div>
@@ -54,7 +67,7 @@ export function DashboardTabs() {
               Secciones
             </p>
             <nav className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
-              {TABS.map(({ id, label, icon: Icon }) => (
+              {tabs.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => setTab(id)}
@@ -76,7 +89,7 @@ export function DashboardTabs() {
           {tab === "entidades" && <EntitiesOverview />}
           {tab === "analitica" && <Analytics />}
           {tab === "cobertura" && <CoverageBoard />}
-          {tab === "calendario" && <ScheduleCalendar />}
+          {tab === "calendario" && <ScheduleCalendar readOnly={readOnly} />}
           {tab === "asignar" && <AssignmentPanel />}
           {tab === "vacaciones" && <VacationPanel />}
           {tab === "horarios" && <ShiftTypesAdmin />}

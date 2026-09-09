@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { UserSearch, LayoutDashboard, CalendarDays, ArrowRight } from "lucide-react";
+import { UserSearch, LayoutDashboard, CalendarDays, ArrowRight, Eye } from "lucide-react";
 import { Card, CardContent } from "@/components/ui";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -24,28 +24,34 @@ export default function HomePage() {
     tint: "bg-brand-50 text-brand-700",
   };
 
+  const dispatcher: Entry = {
+    href: "/dashboard",
+    title: "Panel Dispatcher",
+    desc: "Gestión de flota: zonas, cobertura, calendario, asignación y vacaciones.",
+    icon: <LayoutDashboard size={20} />,
+    tint: "bg-accent-soft text-accent",
+  };
+  const supervisor: Entry = {
+    href: "/dashboard",
+    title: "Panel de supervisión",
+    desc: "Visualiza toda la flota en modo solo lectura: entidades, cobertura, calendario y reportes.",
+    icon: <Eye size={20} />,
+    tint: "bg-brand-50 text-brand-700",
+  };
+  const calendario: Entry = {
+    href: "/calendario",
+    title: "Calendario de turnos",
+    desc: "Consulta la malla del mes por zona.",
+    icon: <CalendarDays size={20} />,
+    tint: "bg-emerald-50 text-emerald-700",
+  };
+
   const entries: Entry[] =
     role === "admin"
-      ? [
-          repartidor,
-          {
-            href: "/dashboard",
-            title: "Panel Dispatcher",
-            desc: "Gestión de flota: zonas, cobertura, calendario, asignación y vacaciones.",
-            icon: <LayoutDashboard size={20} />,
-            tint: "bg-accent-soft text-accent",
-          },
-        ]
-      : [
-          repartidor,
-          {
-            href: "/calendario",
-            title: "Calendario de turnos",
-            desc: "Consulta la malla del mes por zona.",
-            icon: <CalendarDays size={20} />,
-            tint: "bg-emerald-50 text-emerald-700",
-          },
-        ];
+      ? [repartidor, dispatcher]
+      : role === "supervisor"
+        ? [repartidor, supervisor]
+        : [repartidor, calendario];
 
   return (
     <div className="mx-auto max-w-3xl py-10">
