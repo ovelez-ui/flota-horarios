@@ -26,6 +26,19 @@ import { source } from "@/lib/data-source";
 /** Acota los turnos al mes de planificación vigente. */
 const scopeToMonth = (shifts: Shift[]) => shifts.filter((s) => s.date.startsWith(MONTH_PREFIX));
 
+// Reglas de asignación persistidas en el navegador del coordinador.
+const RULES_KEY = "flota-rules-v1";
+function loadRules(): AssignmentRules {
+  if (typeof window === "undefined") return DEFAULT_RULES;
+  try {
+    const raw = window.localStorage.getItem(RULES_KEY);
+    if (raw) return { ...DEFAULT_RULES, ...JSON.parse(raw) };
+  } catch {
+    /* ignora */
+  }
+  return DEFAULT_RULES;
+}
+
 export interface AssignmentResult {
   ok: boolean;
   violations: RuleViolation[];
@@ -59,6 +72,8 @@ interface FleetState {
   // --- Motor de asignación ---
   preview: (input: BuildShiftInput) => AssignmentResult;
   assign: (input: BuildShiftInput) => Promise<AssignmentResult & { error?: string }>;
+  /** Aplica un turno de forma optimista (para "pintar" en el calendario). */
+  paint: (input: BuildShiftInput) => Promise<AssignmentResult & { error?: string }>;
   assignRange: (input: { driverId: string; from: string; to: string; code: string }) => Promise<MutationResult & { count?: number }>;
   setRules: (partial: Partial<AssignmentRules>) => void;
 
@@ -83,7 +98,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
   pointsOfSale: [],
   drivers: [],
   shifts: [],
-  rules: DEFAULT_RULES,
+  rules: loadRules(),
   ready: false,
   loading: false,
   error: null,
@@ -178,6 +193,27 @@ export const useFleetStore = create<FleetState>((set, get) => ({
     return { ok: res.ok, violations: res.violations.length ? res.violations : local.violations, error: res.error };
   },
 
+  paint: async (input) => {
+    const local = get().preview(input);
+    if (!local.ok) return { ok: false, violations: local.violations };
+
+    const candidate = buildShift({ ...input, weekday: input.weekday || weekdayName(input.date) });
+    const prev = get().shifts.find((s) => s.driverId === candidate.driverId && s.date === candidate.date);
+    // Optimista: pinta la celda de inmediato.
+    set((state) => ({
+      shifts: [...state.shifts.filter((s) => !(s.driverId === candidate.driverId && s.date === candidate.date)), candidate],
+    }));
+
+    const res = await source.assignShift(input);
+    if (!res.ok) {
+      // Revertir si el backend rechaza.
+      set((state) => ({
+        shifts: [...state.shifts.filter((s) => !(s.driverId === candidate.driverId && s.date === candidate.date)), ...(prev ? [prev] : [])],
+      }));
+    }
+    return { ok: res.ok, violations: local.violations, error: res.error };
+  },
+
   assignRange: async (input) => {
     const res = await source.assignRange(input);
     if (res.ok && res.shifts.length) {
@@ -192,7 +228,16 @@ export const useFleetStore = create<FleetState>((set, get) => ({
     return { ok: res.ok, error: res.error, count: res.count };
   },
 
-  setRules: (partial) => set((state) => ({ rules: { ...state.rules, ...partial } })),
+  setRules: (partial) =>
+    set((state) => {
+      const rules = { ...state.rules, ...partial };
+      try {
+        if (typeof window !== "undefined") window.localStorage.setItem(RULES_KEY, JSON.stringify(rules));
+      } catch {
+        /* ignora */
+      }
+      return { rules };
+    }),
 
   // --- Zonas ---
   addZone: async (data) => {

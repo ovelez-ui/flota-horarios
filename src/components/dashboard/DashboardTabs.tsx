@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LayoutGrid, CalendarRange, CalendarDays, Wand2, Plane, BarChart3 } from "lucide-react";
+import { LayoutGrid, CalendarRange, CalendarDays, Wand2, Plane, BarChart3, SlidersHorizontal } from "lucide-react";
 import { MONTH } from "@/lib/month";
 import { cn } from "@/lib/utils";
 import { EntitiesOverview } from "./EntitiesOverview";
@@ -10,8 +10,9 @@ import { CoverageBoard } from "./CoverageBoard";
 import { ScheduleCalendar } from "./ScheduleCalendar";
 import { AssignmentPanel } from "./AssignmentPanel";
 import { VacationPanel } from "./VacationPanel";
+import { RulesAdmin } from "./RulesAdmin";
 
-type TabId = "entidades" | "analitica" | "cobertura" | "calendario" | "asignar" | "vacaciones";
+type TabId = "entidades" | "analitica" | "cobertura" | "calendario" | "asignar" | "vacaciones" | "reglas";
 
 const TABS: { id: TabId; label: string; icon: typeof LayoutGrid }[] = [
   { id: "entidades", label: "Entidades", icon: LayoutGrid },
@@ -20,6 +21,7 @@ const TABS: { id: TabId; label: string; icon: typeof LayoutGrid }[] = [
   { id: "calendario", label: "Calendario", icon: CalendarDays },
   { id: "asignar", label: "Asignación", icon: Wand2 },
   { id: "vacaciones", label: "Vacaciones", icon: Plane },
+  { id: "reglas", label: "Reglas", icon: SlidersHorizontal },
 ];
 
 /** Panel dispatcher con navegación por secciones (sin scroll largo). */
@@ -68,6 +70,7 @@ export function DashboardTabs() {
           {tab === "calendario" && <ScheduleCalendar />}
           {tab === "asignar" && <AssignmentPanel />}
           {tab === "vacaciones" && <VacationPanel />}
+          {tab === "reglas" && <RulesAdmin />}
         </div>
       </div>
     </div>

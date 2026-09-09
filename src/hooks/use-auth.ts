@@ -19,7 +19,7 @@ interface AuthState {
 
 async function loadRole(userId: string): Promise<Role> {
   try {
-    const { data } = await getSupabase().from("profiles").select("role").eq("id", userId).single();
+    const { data } = await getSupabase().from("profiles").select("role").eq("id", userId).maybeSingle();
     return data?.role === "admin" ? "admin" : "tienda";
   } catch {
     return "tienda"; // menor privilegio por defecto

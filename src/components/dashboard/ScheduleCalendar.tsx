@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Pencil } from "lucide-react";
+import { useMemo, useState, useRef, useEffect } from "react";
+import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2 } from "lucide-react";
 import type { Driver, RuleViolation, Shift, ShiftKind } from "@/types";
 import { REST_CODE } from "@/types";
 import { Badge, Button, Card, CardContent, Field, Modal, Select } from "@/components/ui";
@@ -59,6 +59,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   const shifts = useFleetStore((s) => s.shifts);
   const preview = useFleetStore((s) => s.preview);
   const assign = useFleetStore((s) => s.assign);
+  const paint = useFleetStore((s) => s.paint);
 
   const dates = useMemo(() => datesOfMonth(MONTH.year, MONTH.monthIndex), []);
 
@@ -81,6 +82,44 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   const [edit, setEdit] = useState<EditState | null>(null);
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  // Modo pintar: pincel activo (código) y arrastre.
+  const [brush, setBrush] = useState<string | null>(null);
+  const [paintMsg, setPaintMsg] = useState<string | null>(null);
+  const painting = useRef(false);
+
+  useEffect(() => {
+    const stop = () => (painting.current = false);
+    window.addEventListener("mouseup", stop);
+    return () => window.removeEventListener("mouseup", stop);
+  }, []);
+
+  async function applyBrush(driver: Driver, date: string) {
+    if (readOnly || !brush) return;
+    const r = await paint({
+      driverId: driver.id,
+      date,
+      weekday: weekdayName(date),
+      code: brush,
+      zoneId: driver.zoneId,
+      pointOfSaleId: driver.basePointOfSaleId,
+    });
+    if (!r.ok) {
+      const v = r.violations.find((x) => x.severity === "error");
+      setPaintMsg(`${driver.name} · ${shortLabel(date)}: ${v?.message ?? r.error ?? "bloqueado"}`);
+    }
+  }
+
+  function onCellDown(driver: Driver, date: string, shift: Shift | undefined) {
+    if (readOnly) return;
+    if (brush) {
+      setPaintMsg(null);
+      painting.current = true;
+      void applyBrush(driver, date);
+    } else {
+      openEdit(driver, date, shift);
+    }
+  }
 
   const visibleDates = view === "all" ? dates : (weeks[view]?.dates ?? dates);
   const codes = useMemo(() => shiftCodeOptions(shifts), [shifts]);
@@ -166,9 +205,44 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
           </Select>
         </div>
         {!readOnly && (
-          <p className="mb-3 flex items-center gap-1 text-xs text-slate-400">
-            <Pencil size={12} /> Haz clic en una celda para editar el turno.
-          </p>
+          <div className="mb-3 rounded-lg border border-slate-200 bg-slate-50/60 p-2.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                onClick={() => setBrush(null)}
+                className={cn(
+                  "flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium",
+                  brush === null ? "bg-brand-700 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100",
+                )}
+                title="Modo detalle: clic abre el editor con validación"
+              >
+                <MousePointer2 size={13} /> Detalle
+              </button>
+              <span className="mx-1 flex items-center gap-1 text-xs text-slate-400">
+                <Paintbrush size={13} /> Pincel:
+              </span>
+              {shiftCodeOptions(shifts).map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setBrush(c)}
+                  className={cn(
+                    "rounded-md px-2 py-1 text-[11px] font-semibold",
+                    cellClass({ code: c } as Shift),
+                    brush === c ? "ring-2 ring-brand-500 ring-offset-1" : "",
+                  )}
+                >
+                  {codeLabel(c)}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 flex items-center gap-1 text-[11px] text-slate-400">
+              {brush ? (
+                <>Pintando <strong className="mx-1 text-slate-600">{codeLabel(brush)}</strong> — clic o arrastra sobre las celdas.</>
+              ) : (
+                <>Elige un pincel para asignar rápido, o clic en una celda para editar con detalle.</>
+              )}
+            </p>
+            {paintMsg && <p className="mt-1 text-[11px] text-accent">⛔ {paintMsg}</p>}
+          </div>
         )}
 
         {/* Navegación por semanas (reduce el scroll horizontal) */}
@@ -248,10 +322,14 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
                       return (
                         <td
                           key={d}
-                          onClick={() => openEdit(driver, d, s)}
+                          onMouseDown={() => onCellDown(driver, d, s)}
+                          onMouseEnter={() => {
+                            if (painting.current && brush) void applyBrush(driver, d);
+                          }}
                           className={cn(
-                            "border-b border-l border-slate-100 px-0.5 text-center text-[10px] font-semibold tabular-nums transition",
-                            !readOnly && "cursor-pointer hover:ring-2 hover:ring-inset hover:ring-brand-400",
+                            "select-none border-b border-l border-slate-100 px-0.5 text-center text-[10px] font-semibold tabular-nums transition",
+                            !readOnly && (brush ? "cursor-crosshair" : "cursor-pointer"),
+                            !readOnly && "hover:ring-2 hover:ring-inset hover:ring-brand-400",
                             cellClass(s),
                             hol && "border-l-2 border-l-amber-300",
                           )}
