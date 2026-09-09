@@ -56,6 +56,7 @@ interface EditState {
 /** Malla mensual tipo Gantt. `readOnly` desactiva la edición (vista tiendas). */
 export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   const zones = useFleetStore((s) => s.zones);
+  const pointsOfSale = useFleetStore((s) => s.pointsOfSale);
   const drivers = useFleetStore((s) => s.drivers);
   const shifts = useFleetStore((s) => s.shifts);
   const preview = useFleetStore((s) => s.preview);
@@ -81,6 +82,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   }, [dates]);
 
   const [zoneId, setZoneId] = useState(zones[0]?.id ?? "");
+  const [posId, setPosId] = useState<string>(""); // "" = todos los puntos de venta
   const [view, setView] = useState<number | "all">(0); // índice de semana o "all"
   const [edit, setEdit] = useState<EditState | null>(null);
   const [saving, setSaving] = useState(false);
@@ -127,9 +129,18 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   const visibleDates = view === "all" ? dates : (weeks[view]?.dates ?? dates);
   const codes = useMemo(() => shiftCodeOptions(shifts, customShiftCodes), [shifts, customShiftCodes]);
 
+  // Puntos de venta de la zona seleccionada (para el filtro).
+  const zonePos = useMemo(
+    () => pointsOfSale.filter((p) => p.zoneId === zoneId),
+    [pointsOfSale, zoneId],
+  );
+
   const zoneDrivers = useMemo(
-    () => drivers.filter((d) => d.zoneId === zoneId),
-    [drivers, zoneId],
+    () =>
+      drivers.filter(
+        (d) => d.zoneId === zoneId && (posId === "" || d.basePointOfSaleId === posId),
+      ),
+    [drivers, zoneId, posId],
   );
 
   // Alerta: domingos trabajados en la zona sin compensatorio dentro de la ventana.
@@ -210,11 +221,29 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
           <h2 className="flex items-center gap-2 font-semibold text-slate-900">
             <IconChip icon={<CalendarDays size={16} />} /> Malla mensual · {MONTH.label}
           </h2>
-          <Select value={zoneId} onChange={(e) => setZoneId(e.target.value)} className="h-9 w-auto">
-            {zones.map((z) => (
-              <option key={z.id} value={z.id}>{z.name}</option>
-            ))}
-          </Select>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={zoneId}
+              onChange={(e) => { setZoneId(e.target.value); setPosId(""); }}
+              className="h-9 w-auto"
+              title="Filtrar por zona"
+            >
+              {zones.map((z) => (
+                <option key={z.id} value={z.id}>{z.name}</option>
+              ))}
+            </Select>
+            <Select
+              value={posId}
+              onChange={(e) => setPosId(e.target.value)}
+              className="h-9 w-auto"
+              title="Filtrar por punto de venta"
+            >
+              <option value="">Todos los puntos de venta</option>
+              {zonePos.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </Select>
+          </div>
         </div>
 
         {sundayAlerts.length > 0 && (
@@ -388,7 +417,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
               {zoneDrivers.length === 0 && (
                 <tr>
                   <td colSpan={visibleDates.length + 1} className="px-3 py-8 text-center text-slate-400">
-                    La zona no tiene repartidores.
+                    {posId ? "No hay repartidores en ese punto de venta." : "La zona no tiene repartidores."}
                   </td>
                 </tr>
               )}
