@@ -5,7 +5,7 @@ import { Search, CreditCard, AlertCircle } from "lucide-react";
 import type { DriverMonthlySummary } from "@/types";
 import { Button, Card, CardContent, Input } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
-import { totalHours, workedDays, restDays } from "@/lib/shift-rules";
+import { totalHours, workedDays, restDays, totalBreakHours } from "@/lib/shift-rules";
 import { DriverInfoCard } from "./DriverInfoCard";
 import { ShiftTable } from "./ShiftTable";
 
@@ -33,6 +33,7 @@ export function DriverConsole() {
       accumulatedHours: Math.round(totalHours(shifts) * 10) / 10,
       workedDays: workedDays(shifts),
       restDays: restDays(shifts),
+      breakHours: totalBreakHours(shifts),
       shifts,
     };
   }, [query, drivers, pointsOfSale, zones, driverShifts]);

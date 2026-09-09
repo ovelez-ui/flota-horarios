@@ -42,6 +42,29 @@ export function restDays(shifts: Shift[]): number {
   return shifts.filter((s) => isRestCode(s.code)).length;
 }
 
+/**
+ * Horas de almuerzo/descanso dentro de la jornada de un turno:
+ * jornada bruta (fin - inicio) menos horas netas trabajadas.
+ */
+export function shiftBreakHours(s: Shift): number {
+  if (s.start === null || s.end === null) return 0;
+  const gross = s.end - s.start;
+  return Math.max(0, Math.round((gross - (s.hours || 0)) * 100) / 100);
+}
+
+/** Total de horas de almuerzo/descanso en jornada de un conjunto de turnos. */
+export function totalBreakHours(shifts: Shift[]): number {
+  return Math.round(shifts.reduce((sum, s) => sum + shiftBreakHours(s), 0) * 10) / 10;
+}
+
+/** Almuerzo que corresponde a una jornada bruta según las reglas. */
+export function expectedLunch(grossHours: number, rules: AssignmentRules): number {
+  if (!rules.lunchEnabled) return 0;
+  if (grossHours >= rules.longJornadaHours) return 2;
+  if (grossHours > rules.lunchThresholdHours) return rules.lunchHours;
+  return 0;
+}
+
 /** Intervalo absoluto (en horas desde el epoch de fecha) que ocupa un turno. */
 interface AbsoluteInterval {
   startAbs: number;
@@ -192,6 +215,20 @@ export function validateAssignment(ctx: AssignmentContext): RuleViolation[] {
         code: "SUNDAY_COMP",
         severity: "warning",
         message: `Domingo trabajado: falta asignar el compensatorio dentro de los ${days} días siguientes.`,
+      });
+    }
+  }
+
+  // 8. Almuerzo/descanso en jornadas largas.
+  if (rules.lunchEnabled && candidate.start !== null && candidate.end !== null) {
+    const gross = Math.round((candidate.end - candidate.start) * 100) / 100;
+    const actual = Math.max(0, Math.round((gross - candidate.hours) * 100) / 100);
+    const expected = expectedLunch(gross, rules);
+    if (expected > 0 && actual + 0.01 < expected) {
+      violations.push({
+        code: "LUNCH_BREAK",
+        severity: "warning",
+        message: `Jornada de ${gross}h: corresponde(n) ${expected}h de almuerzo; el turno descuenta ${actual}h${expected === 1 ? ` (use el sufijo *, ej. ${candidate.code}*)` : ""}.`,
       });
     }
   }

@@ -1,4 +1,4 @@
-import { Building2, MapPin, Clock, CalendarCheck, User } from "lucide-react";
+import { Building2, MapPin, Clock, CalendarCheck, User, UtensilsCrossed } from "lucide-react";
 import type { DriverMonthlySummary } from "@/types";
 import { Badge, Card } from "@/components/ui";
 import { specialMeta, SPECIAL_CODE_LIST, SPECIAL_CODES } from "@/lib/shift-catalog";
@@ -18,14 +18,16 @@ interface Stat {
 }
 
 export function DriverInfoCard({ summary }: { summary: DriverMonthlySummary }) {
-  const { driver, pointOfSale, zone, accumulatedHours, workedDays } = summary;
+  const { driver, pointOfSale, zone, accumulatedHours, workedDays, breakHours } = summary;
   const status = STATUS_LABEL[driver.status] ?? STATUS_LABEL.INACTIVE!;
+  const grossHours = Math.round((accumulatedHours + breakHours) * 10) / 10;
 
   const stats: Stat[] = [
     { icon: <Building2 size={18} />, label: "Punto base", value: pointOfSale.name },
     { icon: <MapPin size={18} />, label: "Zona", value: zone.name },
     { icon: <Clock size={18} />, label: "Horas del mes", value: `${accumulatedHours} h` },
     { icon: <CalendarCheck size={18} />, label: "Días laborados", value: String(workedDays) },
+    { icon: <UtensilsCrossed size={18} />, label: "Descanso en jornada", value: `${breakHours} h` },
   ];
 
   // Conteo de novedades del mes por tipo.
@@ -52,7 +54,7 @@ export function DriverInfoCard({ summary }: { summary: DriverMonthlySummary }) {
         </Badge>
       </div>
 
-      <div className="grid gap-px bg-slate-100 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-px bg-slate-100 sm:grid-cols-2 lg:grid-cols-5">
         {stats.map((s) => (
           <div key={s.label} className="flex items-start gap-3 bg-white p-4">
             <span className="mt-0.5 text-brand-600">{s.icon}</span>
@@ -65,6 +67,20 @@ export function DriverInfoCard({ summary }: { summary: DriverMonthlySummary }) {
           </div>
         ))}
       </div>
+
+      {/* Desglose de jornada: bruto − almuerzo = horas netas del mes */}
+      {breakHours > 0 && (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-slate-100 bg-brand-50/50 px-4 py-3 text-sm">
+          <span className="flex items-center gap-1.5 font-semibold text-brand-800">
+            <UtensilsCrossed size={16} /> Descanso dentro de la jornada: {breakHours} h de almuerzo
+          </span>
+          <span className="text-slate-400">·</span>
+          <span className="text-slate-600">
+            Jornada bruta {grossHours} h − almuerzo {breakHours} h ={" "}
+            <strong className="text-slate-900">{accumulatedHours} h</strong> del mes
+          </span>
+        </div>
+      )}
 
       {/* Contadores de novedades del mes */}
       <div className="border-t border-slate-100 bg-white p-4">

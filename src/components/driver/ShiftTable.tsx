@@ -1,6 +1,7 @@
 import type { Shift, ShiftKind } from "@/types";
 import { Table, THead, TR, TH, TD } from "@/components/ui";
 import { shiftKind, isRestCode, specialMeta, codeLabel } from "@/lib/shift-catalog";
+import { shiftBreakHours } from "@/lib/shift-rules";
 import { shortLabel, isWeekend } from "@/lib/date-utils";
 import { isHoliday, holidayName } from "@/lib/holidays";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ export function ShiftTable({ shifts }: { shifts: Shift[] }) {
           <TH>Fecha</TH>
           <TH>Día</TH>
           <TH>Turno</TH>
+          <TH className="text-right">Almuerzo</TH>
           <TH className="text-right">Horas</TH>
         </TR>
       </THead>
@@ -70,6 +72,12 @@ export function ShiftTable({ shifts }: { shifts: Shift[] }) {
               </TD>
               <TD>
                 <ShiftChip shift={s} />
+              </TD>
+              <TD className="text-right tabular-nums text-slate-500">
+                {(() => {
+                  const b = shiftBreakHours(s);
+                  return rest || b === 0 ? "—" : `${b} h`;
+                })()}
               </TD>
               <TD className="text-right tabular-nums text-slate-600">
                 {rest ? "—" : `${s.hours} h`}

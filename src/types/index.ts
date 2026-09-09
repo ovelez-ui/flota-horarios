@@ -110,6 +110,8 @@ export interface DriverMonthlySummary {
   accumulatedHours: number;
   workedDays: number;
   restDays: number;
+  /** Horas de almuerzo/descanso dentro de la jornada acumuladas en el mes. */
+  breakHours: number;
   shifts: Shift[];
 }
 
@@ -127,6 +129,7 @@ export type RuleCode =
   | "MAX_CONSECUTIVE"
   | "ZONE_MISMATCH"
   | "SUNDAY_COMP"
+  | "LUNCH_BREAK"
   | "DRIVER_UNAVAILABLE";
 
 export interface RuleViolation {
@@ -150,6 +153,14 @@ export interface AssignmentRules {
   requireSundayCompensation: boolean;
   /** Días siguientes al domingo dentro de los que debe caer el compensatorio. */
   sundayCompensationDays: number;
+  /** Si es true, valida que las jornadas largas descuenten hora(s) de almuerzo. */
+  lunchEnabled: boolean;
+  /** Jornada bruta (horas) por encima de la cual corresponde almuerzo. */
+  lunchThresholdHours: number;
+  /** Horas de almuerzo estándar para jornadas por encima del umbral. */
+  lunchHours: number;
+  /** Jornada bruta (horas) desde la cual corresponden 2 horas de almuerzo. */
+  longJornadaHours: number;
 }
 
 export const DEFAULT_RULES: AssignmentRules = {
@@ -159,4 +170,8 @@ export const DEFAULT_RULES: AssignmentRules = {
   enforceZoneMatch: true,
   requireSundayCompensation: true,
   sundayCompensationDays: 6,
+  lunchEnabled: true,
+  lunchThresholdHours: 7,
+  lunchHours: 1,
+  longJornadaHours: 10,
 };

@@ -5,7 +5,7 @@ import { Download, FileSpreadsheet, Users, CalendarClock } from "lucide-react";
 import { Button, Card, CardContent, Field, IconChip, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { isRestCode, codeLabel } from "@/lib/shift-catalog";
-import { sundayCompensationAlerts } from "@/lib/shift-rules";
+import { sundayCompensationAlerts, totalBreakHours } from "@/lib/shift-rules";
 import { parseISO, weekdayName } from "@/lib/date-utils";
 import { downloadCSV } from "@/lib/csv";
 
@@ -75,7 +75,8 @@ export function ReportsPanel() {
     const rows: (string | number)[][] = [
       [
         "Cédula", "Repartidor", "Zona", "Punto de venta",
-        "Horas mes", "Tope horas", "Días laborados", "Descansos", "Domingos trabajados",
+        "Horas mes (netas)", "Almuerzo (h)", "Horas brutas", "Tope horas",
+        "Días laborados", "Descansos", "Domingos trabajados",
         "Vacaciones", "Incapacidades", "Licencias", "Compensatorios", "Día de la familia",
         "Comp. pendientes",
       ],
@@ -83,12 +84,14 @@ export function ReportsPanel() {
     for (const d of scope.drivers) {
       const list = scope.shifts.filter((s) => s.driverId === d.id);
       const horas = Math.round(list.reduce((a, s) => a + (s.hours || 0), 0) * 10) / 10;
+      const almuerzo = totalBreakHours(list);
+      const brutas = Math.round((horas + almuerzo) * 10) / 10;
       const laborados = list.filter((s) => !isRestCode(s.code)).length;
       const domingos = list.filter((s) => !isRestCode(s.code) && isSunday(s.date)).length;
       const pend = sundayCompensationAlerts(list, rules).filter((a) => !a.compensated).length;
       rows.push([
         d.id, d.name, zoneName.get(d.zoneId) ?? d.zoneId, posName.get(d.basePointOfSaleId) ?? "",
-        horas, d.monthlyHourCap, laborados, count(list, "DESC"), domingos,
+        horas, almuerzo, brutas, d.monthlyHourCap, laborados, count(list, "DESC"), domingos,
         count(list, "VACAC"), count(list, "INC"), count(list, "LIC"), count(list, "COMP"), count(list, "FAM"),
         pend,
       ]);

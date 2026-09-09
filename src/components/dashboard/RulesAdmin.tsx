@@ -93,6 +93,48 @@ export function RulesAdmin() {
           </div>
         </div>
 
+        {/* Almuerzo / descanso en jornada */}
+        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <input
+              type="checkbox"
+              checked={rules.lunchEnabled}
+              onChange={(e) => setRules({ lunchEnabled: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-600"
+            />
+            Almuerzo obligatorio en jornadas largas
+          </label>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <Field label="Jornada mínima con almuerzo (h)" hint="Jornada bruta por encima de la cual corresponde almuerzo.">
+              <Input
+                type="number" min={1} max={24}
+                disabled={!rules.lunchEnabled}
+                value={rules.lunchThresholdHours}
+                onChange={(e) => setRules({ lunchThresholdHours: num(e.target.value, 1) })}
+              />
+            </Field>
+            <Field label="Horas de almuerzo" hint="Descuento estándar de la jornada.">
+              <Input
+                type="number" min={0} max={4} step={0.5}
+                disabled={!rules.lunchEnabled}
+                value={rules.lunchHours}
+                onChange={(e) => setRules({ lunchHours: num(e.target.value) })}
+              />
+            </Field>
+            <Field label="Jornada larga → 2 h (h)" hint="Desde esta jornada bruta corresponden 2 horas.">
+              <Input
+                type="number" min={1} max={24}
+                disabled={!rules.lunchEnabled}
+                value={rules.longJornadaHours}
+                onChange={(e) => setRules({ longJornadaHours: num(e.target.value, 1) })}
+              />
+            </Field>
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            El almuerzo no cuenta como hora trabajada: se descuenta de las horas del mes y se muestra como “descanso en jornada”. En la malla, el sufijo <strong>*</strong> descuenta 1 hora (ej. 07-16* = 8h).
+          </p>
+        </div>
+
         <p className="mt-5 flex items-center gap-2 rounded-lg bg-emerald-50 p-2.5 text-sm text-emerald-700">
           <CheckCircle2 size={16} /> Los cambios aplican de inmediato a la validación de turnos.
         </p>
