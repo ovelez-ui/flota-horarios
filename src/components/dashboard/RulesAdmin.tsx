@@ -121,7 +121,7 @@ export function RulesAdmin() {
                 onChange={(e) => setRules({ lunchHours: num(e.target.value) })}
               />
             </Field>
-            <Field label="Jornada larga → 2 h (h)" hint="Desde esta jornada bruta corresponden 2 horas.">
+            <Field label="Jornada para 2 h (más de)" hint="Por encima de esta jornada bruta corresponden 2 horas de almuerzo.">
               <Input
                 type="number" min={1} max={24}
                 disabled={!rules.lunchEnabled}

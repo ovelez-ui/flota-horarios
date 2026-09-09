@@ -159,7 +159,7 @@ export interface AssignmentRules {
   lunchThresholdHours: number;
   /** Horas de almuerzo estándar para jornadas por encima del umbral. */
   lunchHours: number;
-  /** Jornada bruta (horas) desde la cual corresponden 2 horas de almuerzo. */
+  /** Jornada bruta (horas) por encima de la cual corresponden 2 horas de almuerzo. */
   longJornadaHours: number;
 }
 
@@ -173,5 +173,5 @@ export const DEFAULT_RULES: AssignmentRules = {
   lunchEnabled: true,
   lunchThresholdHours: 7,
   lunchHours: 1,
-  longJornadaHours: 10,
+  longJornadaHours: 11,
 };

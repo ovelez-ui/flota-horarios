@@ -60,7 +60,7 @@ export function totalBreakHours(shifts: Shift[]): number {
 /** Almuerzo que corresponde a una jornada bruta según las reglas. */
 export function expectedLunch(grossHours: number, rules: AssignmentRules): number {
   if (!rules.lunchEnabled) return 0;
-  if (grossHours >= rules.longJornadaHours) return 2;
+  if (grossHours > rules.longJornadaHours) return 2; // más de 11 h → 2 h
   if (grossHours > rules.lunchThresholdHours) return rules.lunchHours;
   return 0;
 }
