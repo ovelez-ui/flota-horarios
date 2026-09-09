@@ -275,7 +275,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
           <table className="border-collapse text-xs">
             <thead>
               <tr>
-                <th className="sticky left-0 z-20 border-b border-r border-slate-200 bg-slate-50 px-3 py-2 text-left font-semibold text-slate-500">
+                <th className="sticky left-0 z-20 border-b border-r border-slate-200 bg-slate-50 px-2 py-2 text-left font-semibold text-slate-500 sm:px-3">
                   Repartidor
                 </th>
                 {visibleDates.map((d) => {
@@ -312,7 +312,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
                 const m = byDriver.get(driver.id);
                 return (
                   <tr key={driver.id} className="hover:bg-slate-50/50">
-                    <td className="sticky left-0 z-10 max-w-[220px] truncate border-b border-r border-slate-100 bg-white px-3 py-1.5 font-medium text-slate-700" title={driver.name}>
+                    <td className="sticky left-0 z-10 max-w-[108px] truncate border-b border-r border-slate-100 bg-white px-2 py-1.5 font-medium text-slate-700 sm:max-w-[220px] sm:px-3" title={driver.name}>
                       {driver.name}
                     </td>
                     {visibleDates.map((d) => {
@@ -354,7 +354,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
             {zoneDrivers.length > 0 && (
               <tfoot>
                 <tr>
-                  <td className="sticky left-0 z-10 border-r border-t border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold text-slate-600">
+                  <td className="sticky left-0 z-10 border-r border-t border-slate-200 bg-slate-50 px-2 py-1.5 font-semibold text-slate-600 sm:px-3">
                     Cubiertos
                   </td>
                   {visibleDates.map((d) => {

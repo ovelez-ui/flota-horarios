@@ -5,7 +5,7 @@ import { LayoutDashboard, UserSearch, Settings2, CalendarDays, LogOut } from "lu
 import { useAuth } from "@/hooks/use-auth";
 
 const linkClass =
-  "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-slate-600 hover:bg-slate-100";
+  "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-slate-600 hover:bg-slate-100 sm:px-3";
 
 /** Navegación del encabezado según el rol del usuario. */
 export function AppNav() {
@@ -16,27 +16,27 @@ export function AppNav() {
   if (role === null) return null; // sin sesión → solo el login
 
   return (
-    <nav className="flex items-center gap-1 text-sm">
+    <nav className="flex items-center gap-0.5 text-sm sm:gap-1">
       <Link href="/repartidor" className={linkClass}>
-        <UserSearch size={16} /> Repartidor
+        <UserSearch size={16} /> <span className="hidden sm:inline">Repartidor</span>
       </Link>
 
       {role === "admin" ? (
         <>
           <Link href="/dashboard" className={linkClass}>
-            <LayoutDashboard size={16} /> Dispatcher
+            <LayoutDashboard size={16} /> <span className="hidden sm:inline">Dispatcher</span>
           </Link>
           <Link href="/admin" className={linkClass}>
-            <Settings2 size={16} /> Admin
+            <Settings2 size={16} /> <span className="hidden sm:inline">Admin</span>
           </Link>
         </>
       ) : (
         <Link href="/calendario" className={linkClass}>
-          <CalendarDays size={16} /> Calendario
+          <CalendarDays size={16} /> <span className="hidden sm:inline">Calendario</span>
         </Link>
       )}
 
-      <span className="mx-1 hidden text-xs text-slate-400 sm:inline">{email}</span>
+      <span className="mx-1 hidden text-xs text-slate-400 lg:inline">{email}</span>
       <button
         onClick={() => void signOut()}
         className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-slate-500 hover:bg-slate-100"

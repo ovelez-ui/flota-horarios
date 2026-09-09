@@ -17,11 +17,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full font-sans">
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
           <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
-            <Link href="/" className="flex items-center gap-2 font-semibold text-brand-700">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-700 text-white">
+            <Link href="/" className="flex shrink-0 items-center gap-2 whitespace-nowrap font-semibold text-brand-700">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-700 text-white">
                 <Truck size={18} />
               </span>
-              Flota Horarios
+              <span className="hidden sm:inline">Flota Horarios</span>
             </Link>
             <AppNav />
           </div>
