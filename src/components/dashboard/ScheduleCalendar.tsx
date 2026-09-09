@@ -60,6 +60,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   const preview = useFleetStore((s) => s.preview);
   const assign = useFleetStore((s) => s.assign);
   const paint = useFleetStore((s) => s.paint);
+  const customShiftCodes = useFleetStore((s) => s.customShiftCodes);
 
   const dates = useMemo(() => datesOfMonth(MONTH.year, MONTH.monthIndex), []);
 
@@ -122,7 +123,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   }
 
   const visibleDates = view === "all" ? dates : (weeks[view]?.dates ?? dates);
-  const codes = useMemo(() => shiftCodeOptions(shifts), [shifts]);
+  const codes = useMemo(() => shiftCodeOptions(shifts, customShiftCodes), [shifts, customShiftCodes]);
 
   const zoneDrivers = useMemo(
     () => drivers.filter((d) => d.zoneId === zoneId),
@@ -220,7 +221,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
               <span className="mx-1 flex items-center gap-1 text-xs text-slate-400">
                 <Paintbrush size={13} /> Pincel:
               </span>
-              {shiftCodeOptions(shifts).map((c) => (
+              {codes.map((c) => (
                 <button
                   key={c}
                   onClick={() => setBrush(c)}

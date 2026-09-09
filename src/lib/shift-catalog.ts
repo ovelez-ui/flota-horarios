@@ -115,7 +115,16 @@ export function distinctWorkCodes(shifts: Shift[]): string[] {
   });
 }
 
-/** Lista de opciones para selectores de turno: turnos reales + novedades. */
-export function shiftCodeOptions(shifts: Shift[]): string[] {
-  return [...distinctWorkCodes(shifts), ...SPECIAL_CODE_LIST];
+/**
+ * Lista de opciones para selectores de turno: turnos reales de la malla +
+ * turnos personalizados (`extra`) + novedades.
+ */
+export function shiftCodeOptions(shifts: Shift[], extra: string[] = []): string[] {
+  const work = new Set([...distinctWorkCodes(shifts), ...extra]);
+  const sorted = [...work].sort((a, b) => {
+    const sa = a.match(/^\d+/)?.[0] ?? "0";
+    const sb = b.match(/^\d+/)?.[0] ?? "0";
+    return Number(sa) - Number(sb) || a.localeCompare(b);
+  });
+  return [...sorted, ...SPECIAL_CODE_LIST];
 }

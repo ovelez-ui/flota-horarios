@@ -37,7 +37,8 @@ export function AssignmentPanel() {
   const metrics = useFleetStore((s) => s.metrics);
 
   const dates = useMemo(() => datesOfMonth(MONTH.year, MONTH.monthIndex), []);
-  const codes = useMemo(() => shiftCodeOptions(shifts), [shifts]);
+  const customShiftCodes = useFleetStore((s) => s.customShiftCodes);
+  const codes = useMemo(() => shiftCodeOptions(shifts, customShiftCodes), [shifts, customShiftCodes]);
 
   const [driverId, setDriverId] = useState(drivers[0]?.id ?? "");
   const [date, setDate] = useState(dates[Math.min(9, dates.length - 1)]!);

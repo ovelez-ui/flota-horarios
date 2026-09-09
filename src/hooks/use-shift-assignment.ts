@@ -22,6 +22,7 @@ import {
 import { weekdayName } from "@/lib/date-utils";
 import { MONTH_PREFIX } from "@/lib/month";
 import { source } from "@/lib/data-source";
+import { parseShiftCode, isRestCode, distinctWorkCodes } from "@/lib/shift-catalog";
 
 /** Acota los turnos al mes de planificación vigente. */
 const scopeToMonth = (shifts: Shift[]) => shifts.filter((s) => s.date.startsWith(MONTH_PREFIX));
@@ -37,6 +38,27 @@ function loadRules(): AssignmentRules {
     /* ignora */
   }
   return DEFAULT_RULES;
+}
+
+// Turnos especiales/personalizados definidos por el coordinador (además de los
+// que ya vienen en la malla). Persistidos en el navegador.
+const CODES_KEY = "flota-shift-codes-v1";
+function loadCustomCodes(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(CODES_KEY);
+    if (raw) return JSON.parse(raw) as string[];
+  } catch {
+    /* ignora */
+  }
+  return [];
+}
+function saveCustomCodes(codes: string[]) {
+  try {
+    if (typeof window !== "undefined") window.localStorage.setItem(CODES_KEY, JSON.stringify(codes));
+  } catch {
+    /* ignora */
+  }
 }
 
 export interface AssignmentResult {
@@ -77,6 +99,11 @@ interface FleetState {
   assignRange: (input: { driverId: string; from: string; to: string; code: string }) => Promise<MutationResult & { count?: number }>;
   setRules: (partial: Partial<AssignmentRules>) => void;
 
+  // --- Catálogo de turnos especiales (admin de horarios) ---
+  customShiftCodes: string[];
+  addShiftCode: (code: string) => { ok: boolean; error?: string; code?: string };
+  removeShiftCode: (code: string) => void;
+
   // --- CRUD (a través de la API) ---
   addZone: (data: Omit<Zone, "id">) => Promise<MutationResult>;
   updateZone: (id: string, patch: Partial<Omit<Zone, "id">>) => Promise<MutationResult>;
@@ -99,6 +126,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
   drivers: [],
   shifts: [],
   rules: loadRules(),
+  customShiftCodes: loadCustomCodes(),
   ready: false,
   loading: false,
   error: null,
@@ -237,6 +265,33 @@ export const useFleetStore = create<FleetState>((set, get) => ({
         /* ignora */
       }
       return { rules };
+    }),
+
+  addShiftCode: (raw) => {
+    let def;
+    try {
+      def = parseShiftCode(raw);
+    } catch {
+      return { ok: false, error: `Código inválido: "${raw}". Usa formato hora, ej. 10-18 o 22-06.` };
+    }
+    if (isRestCode(def.code)) {
+      return { ok: false, error: "Ese es una novedad (descanso/vacaciones…), no un turno." };
+    }
+    const existing = new Set([...distinctWorkCodes(get().shifts), ...get().customShiftCodes]);
+    if (existing.has(def.code)) {
+      return { ok: false, error: `El turno ${def.code} ya está disponible.` };
+    }
+    const codes = [...get().customShiftCodes, def.code];
+    saveCustomCodes(codes);
+    set({ customShiftCodes: codes });
+    return { ok: true, code: def.code };
+  },
+
+  removeShiftCode: (code) =>
+    set((state) => {
+      const codes = state.customShiftCodes.filter((c) => c !== code);
+      saveCustomCodes(codes);
+      return { customShiftCodes: codes };
     }),
 
   // --- Zonas ---
