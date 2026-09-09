@@ -4,7 +4,7 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2 } from "lucide-react";
 import type { Driver, RuleViolation, Shift, ShiftKind } from "@/types";
 import { REST_CODE } from "@/types";
-import { Badge, Button, Card, CardContent, Field, Modal, Select } from "@/components/ui";
+import { Badge, Button, Card, CardContent, Field, IconChip, Modal, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { MONTH } from "@/lib/month";
 import {
@@ -197,7 +197,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
       <CardContent className="pt-5">
         <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 font-semibold text-slate-900">
-            <CalendarDays size={18} className="text-brand-600" /> Malla mensual · {MONTH.label}
+            <IconChip icon={<CalendarDays size={16} />} /> Malla mensual · {MONTH.label}
           </h2>
           <Select value={zoneId} onChange={(e) => setZoneId(e.target.value)} className="h-9 w-auto">
             {zones.map((z) => (

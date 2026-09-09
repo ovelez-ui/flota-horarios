@@ -6,7 +6,7 @@ import {
   Search, ChevronRight, X,
 } from "lucide-react";
 import type { Driver, Shift, ShiftKind } from "@/types";
-import { Card, CardContent, Input, Select } from "@/components/ui";
+import { Card, CardContent, IconChip, Input, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { MONTH } from "@/lib/month";
 import { totalHours, workedDays, restDays } from "@/lib/shift-rules";
@@ -242,7 +242,7 @@ export function Analytics() {
         <CardContent className="pt-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="flex items-center gap-2 font-semibold text-slate-900">
-              <BarChart3 size={18} className="text-brand-600" /> Analítica por zona · {MONTH.label}
+              <IconChip icon={<BarChart3 size={16} />} /> Analítica por zona · {MONTH.label}
             </h2>
             <Select value={zoneId} onChange={(e) => { setZoneId(e.target.value); setSelectedDriverId(null); }} className="h-9 w-auto">
               {zones.map((z) => (

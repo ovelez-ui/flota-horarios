@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CalendarPlus, CheckCircle2, Plane } from "lucide-react";
-import { Button, Card, CardContent, Field, Select } from "@/components/ui";
+import { Button, Card, CardContent, Field, IconChip, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { MONTH } from "@/lib/month";
 import { SPECIAL_CODES } from "@/lib/shift-catalog";
@@ -51,7 +51,7 @@ export function VacationPanel() {
     <Card>
       <CardContent className="pt-5">
         <h2 className="mb-1 flex items-center gap-2 font-semibold text-slate-900">
-          <Plane size={18} className="text-brand-600" /> Vacaciones y novedades
+          <IconChip icon={<Plane size={16} />} /> Vacaciones y novedades
         </h2>
         <p className="mb-4 text-sm text-slate-500">
           Registra un rango de días de vacaciones, incapacidad, compensatorio o día de la familia.

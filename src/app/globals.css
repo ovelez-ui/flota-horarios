@@ -1,12 +1,7 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  --background: 210 40% 98%;
-  --foreground: 222 47% 11%;
-}
 
 html,
 body {
@@ -14,6 +9,32 @@ body {
 }
 
 body {
-  @apply bg-slate-50 text-slate-800 antialiased;
+  @apply text-slate-800 antialiased;
+  /* Fondo con un degradado muy sutil hacia el azul de marca. */
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(8, 72, 120, 0.06), transparent 60%),
+    radial-gradient(900px 500px at -10% 0%, rgba(11, 122, 133, 0.05), transparent 55%),
+    #f6f8fb;
+  background-attachment: fixed;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Barras de scroll más discretas y modernas. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+*::-webkit-scrollbar {
+  height: 9px;
+  width: 9px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  background-clip: content-box;
 }

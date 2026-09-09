@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Clock, Plus, X } from "lucide-react";
 import type { Shift } from "@/types";
-import { Button, Card, CardContent, Field, Input } from "@/components/ui";
+import { Button, Card, CardContent, Field, IconChip, Input } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import {
   parseShiftCode,
@@ -78,7 +78,7 @@ export function ShiftTypesAdmin() {
     <Card>
       <CardContent className="pt-5">
         <h2 className="mb-1 flex items-center gap-2 font-semibold text-slate-900">
-          <Clock size={18} className="text-brand-600" /> Administrador de horarios
+          <IconChip icon={<Clock size={16} />} /> Administrador de horarios
         </h2>
         <p className="mb-4 text-sm text-slate-500">
           Define turnos especiales que se sumarán a la paleta y a los selectores de asignación.

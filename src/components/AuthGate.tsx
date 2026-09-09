@@ -13,14 +13,14 @@ function LoginForm() {
   const [password, setPassword] = useState("");
 
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <Card className="w-full max-w-sm">
-        <div className="flex items-center gap-2 border-b border-slate-100 bg-brand-700 p-5 text-white">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/15">
-            <Truck size={18} />
+    <div className="flex min-h-[70vh] items-center justify-center">
+      <Card className="w-full max-w-sm overflow-hidden shadow-soft">
+        <div className="flex items-center gap-3 bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 p-5 text-white">
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/15 ring-1 ring-white/25">
+            <Truck size={20} />
           </span>
           <div>
-            <p className="font-semibold leading-tight">Flota Horarios</p>
+            <p className="text-[15px] font-semibold leading-tight">Flota Horarios</p>
             <p className="text-xs text-brand-100">Ingresa para continuar</p>
           </div>
         </div>

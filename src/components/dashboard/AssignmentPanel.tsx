@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Wand2, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import type { RuleViolation } from "@/types";
-import { Button, Card, CardContent, Select, Badge } from "@/components/ui";
+import { Button, Card, CardContent, IconChip, Select, Badge } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { MONTH } from "@/lib/month";
 import { shiftCodeOptions, codeLabel } from "@/lib/shift-catalog";
@@ -87,7 +87,7 @@ export function AssignmentPanel() {
     <Card>
       <CardContent className="pt-5">
         <h2 className="mb-1 flex items-center gap-2 font-semibold text-slate-900">
-          <Wand2 size={18} className="text-brand-600" /> Asignar turno
+          <IconChip icon={<Wand2 size={16} />} /> Asignar turno
         </h2>
         <p className="mb-4 text-sm text-slate-500">
           El motor valida choques, tope de horas, descanso semanal y cruce de zona antes de aplicar.

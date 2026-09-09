@@ -17,13 +17,20 @@ interface AuthState {
   signOut: () => Promise<void>;
 }
 
+/** Envuelve una promesa con un tiempo límite (evita que la app quede colgada). */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    p.catch(() => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
 async function loadRole(userId: string): Promise<Role> {
-  try {
-    const { data } = await getSupabase().from("profiles").select("role").eq("id", userId).maybeSingle();
-    return data?.role === "admin" ? "admin" : "tienda";
-  } catch {
-    return "tienda"; // menor privilegio por defecto
-  }
+  const query = (async () =>
+    getSupabase().from("profiles").select("role").eq("id", userId).maybeSingle())();
+  const res = await withTimeout(query, 7000);
+  const role = (res as { data?: { role?: string } } | null)?.data?.role;
+  return role === "admin" ? "admin" : "tienda";
 }
 
 let initialized = false;
@@ -46,13 +53,20 @@ export const useAuth = create<AuthState>((set) => ({
     }
 
     const sb = getSupabase();
-    const { data } = await sb.auth.getSession();
-    const session = data.session;
-    if (session?.user) {
-      const role = await loadRole(session.user.id);
-      set({ ready: true, email: session.user.email ?? null, role });
-    } else {
-      set({ ready: true, email: null, role: null });
+    try {
+      const res = await withTimeout(sb.auth.getSession(), 7000);
+      const session = (res as { data?: { session?: { user?: { id: string; email?: string } } } } | null)?.data?.session;
+      if (session?.user) {
+        const role = await loadRole(session.user.id);
+        set({ email: session.user.email ?? null, role });
+      } else if (res === null) {
+        // getSession no respondió (token corrupto): limpia para el próximo intento.
+        void sb.auth.signOut().catch(() => {});
+      }
+    } catch {
+      /* sesión inválida: se mostrará el login */
+    } finally {
+      set({ ready: true });
     }
 
     sb.auth.onAuthStateChange(async (_event, s) => {

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { CalendarRange, AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { ShiftKind } from "@/types";
-import { Card, CardContent, Select } from "@/components/ui";
+import { Card, CardContent, IconChip, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { MONTH } from "@/lib/month";
 import { shiftKind, isRestCode } from "@/lib/shift-catalog";
@@ -53,7 +53,7 @@ export function CoverageBoard() {
       <CardContent className="pt-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 font-semibold text-slate-900">
-            <CalendarRange size={18} className="text-brand-600" /> Cobertura por día
+            <IconChip icon={<CalendarRange size={16} />} /> Cobertura por día
           </h2>
           <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
             <Select value={zoneId} onChange={(e) => setZoneId(e.target.value)} className="h-9 w-auto">
