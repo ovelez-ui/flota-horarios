@@ -106,6 +106,25 @@ export const api = {
     };
   },
 
+  // --- Turnos de un mes específico (para copiar plantilla) ---
+  async listShiftsInMonth(prefix: string): Promise<SeedShift[]> {
+    const { shifts } = await this.bootstrap();
+    return shifts.filter((s) => s.date.startsWith(prefix));
+  },
+
+  // --- Alta masiva de turnos (copiar mes) ---
+  async bulkUpsertShifts(shifts: Shift[]): Promise<{ ok: boolean; count: number; error?: string }> {
+    let count = 0;
+    for (const s of shifts) {
+      const r = await this.assignShift({
+        driverId: s.driverId, date: s.date, weekday: s.weekday, code: s.code,
+        zoneId: s.zoneId, pointOfSaleId: s.pointOfSaleId,
+      });
+      if (r.ok) count++;
+    }
+    return { ok: true, count };
+  },
+
   // --- Asignación ---
   async assignShift(body: BuildShiftInput) {
     const { ok, data } = await req<{ ok?: boolean; violations?: RuleViolation[]; shift?: Shift; error?: string }>(

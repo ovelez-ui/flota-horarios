@@ -20,7 +20,7 @@ import {
   type BuildShiftInput,
 } from "@/lib/shift-rules";
 import { weekdayName } from "@/lib/date-utils";
-import { DEFAULT_MONTH, setActiveMonth, type MonthDef } from "@/lib/month";
+import { DEFAULT_MONTH, MONTHS, setActiveMonth, type MonthDef } from "@/lib/month";
 import { source } from "@/lib/data-source";
 import { parseShiftCode, isRestCode, distinctWorkCodes } from "@/lib/shift-catalog";
 
@@ -90,6 +90,8 @@ interface FleetState {
   refresh: () => Promise<void>;
   /** Cambia el mes activo y recarga sus turnos. */
   setMonth: (prefix: string) => Promise<void>;
+  /** Copia el mes anterior como plantilla en el mes activo (sin sobrescribir lo ya asignado). */
+  copyPreviousMonth: () => Promise<{ ok: boolean; count?: number; skipped?: number; error?: string }>;
 
   // --- Consultas (sobre el caché en memoria) ---
   driverShifts: (driverId: string) => Shift[];
@@ -192,6 +194,54 @@ export const useFleetStore = create<FleetState>((set, get) => ({
       });
     } catch (e) {
       set({ loading: false, error: e instanceof Error ? e.message : "Error de carga." });
+    }
+  },
+
+  copyPreviousMonth: async () => {
+    const target = get().month;
+    const idx = MONTHS.findIndex((m) => m.prefix === target.prefix);
+    const prev = idx > 0 ? MONTHS[idx - 1] : undefined;
+    if (!prev) return { ok: false, error: "No hay un mes anterior planificable." };
+
+    set({ loading: true, error: null });
+    try {
+      const src = await source.listShiftsInMonth(prev.prefix);
+      const targetDays = new Date(target.year, target.monthIndex + 1, 0).getDate();
+      // No sobrescribe: excluye (repartidor, fecha) que ya tengan turno en el mes activo.
+      const taken = new Set(get().shifts.map((s) => `${s.driverId}|${s.date}`));
+      const mapped: Shift[] = [];
+      let skipped = 0;
+      for (const s of src) {
+        const day = Number(s.date.slice(8, 10));
+        // Día equivalente en el mes destino (descarta días que no existen, ej. 31).
+        if (day > targetDays) { skipped++; continue; }
+        const date = `${target.prefix}-${String(day).padStart(2, "0")}`;
+        if (taken.has(`${s.driverId}|${date}`)) { skipped++; continue; }
+        mapped.push({
+          id: `${s.driverId}-${date}`,
+          driverId: s.driverId,
+          date,
+          weekday: weekdayName(date),
+          code: s.code,
+          start: s.start,
+          end: s.end,
+          hours: s.hours,
+          pointOfSaleId: s.pointOfSaleId,
+          zoneId: s.zoneId,
+        });
+      }
+      const res = await source.bulkUpsertShifts(mapped);
+      if (!res.ok) {
+        set({ loading: false, error: res.error ?? "No se pudo copiar el mes." });
+        return { ok: false, error: res.error };
+      }
+      const data = await source.bootstrap();
+      set({ shifts: scopeToMonth(data.shifts, target.prefix), loading: false });
+      return { ok: true, count: res.count, skipped };
+    } catch (e) {
+      const error = e instanceof Error ? e.message : "Error al copiar el mes.";
+      set({ loading: false, error });
+      return { ok: false, error };
     }
   },
 

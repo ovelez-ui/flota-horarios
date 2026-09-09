@@ -125,6 +125,31 @@ export const supabaseSource = {
     return error ? { ok: false, error: error.message } : { ok: true };
   },
 
+  // --- Turnos de un mes específico (para copiar plantilla) ---
+  async listShiftsInMonth(prefix: string): Promise<SeedShift[]> {
+    const db = getSupabase();
+    const [y, m] = prefix.split("-").map(Number);
+    const last = new Date(y!, m!, 0).getDate();
+    const from = `${prefix}-01`;
+    const to = `${prefix}-${String(last).padStart(2, "0")}`;
+    const out: any[] = [];
+    const size = 1000;
+    for (let f = 0; ; f += size) {
+      const { data, error } = await db.from("shifts").select("*").gte("date", from).lte("date", to).range(f, f + size - 1);
+      if (error) throw new Error(error.message);
+      out.push(...(data ?? []));
+      if (!data || data.length < size) break;
+    }
+    return out.map(toShift);
+  },
+
+  // --- Alta masiva de turnos (copiar mes) ---
+  async bulkUpsertShifts(shifts: Shift[]): Promise<{ ok: boolean; count: number; error?: string }> {
+    if (shifts.length === 0) return { ok: true, count: 0 };
+    const { error } = await getSupabase().from("shifts").upsert(shifts.map(shiftRow), { onConflict: "driver_id,date" });
+    return error ? { ok: false, count: 0, error: error.message } : { ok: true, count: shifts.length };
+  },
+
   // --- Asignación (validación previa en el store con preview()) ---
   async assignShift(input: BuildShiftInput) {
     const shift = buildShift({ ...input, weekday: input.weekday || weekdayName(input.date) });

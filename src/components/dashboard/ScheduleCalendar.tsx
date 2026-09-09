@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState, useRef, useEffect } from "react";
-import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2, ChevronDown, ChevronRight } from "lucide-react";
+import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2, ChevronDown, ChevronRight, Copy } from "lucide-react";
 import type { Driver, RuleViolation, Shift, ShiftKind } from "@/types";
 import { REST_CODE } from "@/types";
 import { Badge, Button, Card, CardContent, Field, IconChip, Modal, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
+import { MONTHS } from "@/lib/month";
 import { MonthSwitcher } from "./MonthSwitcher";
 import {
   shiftKind,
@@ -64,7 +65,14 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   const paint = useFleetStore((s) => s.paint);
   const rules = useFleetStore((s) => s.rules);
   const month = useFleetStore((s) => s.month);
+  const copyPreviousMonth = useFleetStore((s) => s.copyPreviousMonth);
   const customShiftCodes = useFleetStore((s) => s.customShiftCodes);
+
+  // Mes anterior planificable (para "copiar como plantilla").
+  const prevMonth = useMemo(() => {
+    const i = MONTHS.findIndex((m) => m.prefix === month.prefix);
+    return i > 0 ? MONTHS[i - 1] : undefined;
+  }, [month]);
 
   const dates = useMemo(() => datesOfMonth(month.year, month.monthIndex), [month]);
 
@@ -89,6 +97,27 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   const [edit, setEdit] = useState<EditState | null>(null);
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  // Copiar mes anterior como plantilla.
+  const [copyOpen, setCopyOpen] = useState(false);
+  const [copying, setCopying] = useState(false);
+  const [copyMsg, setCopyMsg] = useState<string | null>(null);
+
+  async function runCopy() {
+    setCopying(true);
+    setCopyMsg(null);
+    const r = await copyPreviousMonth();
+    setCopying(false);
+    setCopyOpen(false);
+    if (r.ok) {
+      setCopyMsg(
+        `Se copiaron ${r.count ?? 0} turno(s) de ${prevMonth?.label ?? "el mes anterior"}` +
+          (r.skipped ? ` · ${r.skipped} omitido(s) por ya existir o no tener día equivalente.` : "."),
+      );
+    } else {
+      setCopyMsg(r.error ?? "No se pudo copiar el mes.");
+    }
+  }
 
   // Modo pintar: pincel activo (código) y arrastre.
   const [brush, setBrush] = useState<string | null>(null);
@@ -255,8 +284,24 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </Select>
+            {!readOnly && prevMonth && (
+              <Button
+                variant="outline"
+                className="h-9"
+                onClick={() => { setCopyMsg(null); setCopyOpen(true); }}
+                title={`Copiar los turnos de ${prevMonth.label} como plantilla`}
+              >
+                <Copy size={15} /> Copiar {prevMonth.label.replace(" 2026", "")}
+              </Button>
+            )}
           </div>
         </div>
+
+        {copyMsg && (
+          <p className="mb-3 flex items-center gap-2 rounded-lg bg-emerald-50 p-2.5 text-sm text-emerald-700">
+            <CheckCircle2 size={16} /> {copyMsg}
+          </p>
+        )}
 
         {compAlert.total > 0 && (
           <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50">
@@ -495,6 +540,32 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
           </span>
         </div>
       </CardContent>
+
+      <Modal
+        open={copyOpen}
+        onClose={() => !copying && setCopyOpen(false)}
+        title="Copiar mes como plantilla"
+      >
+        {prevMonth && (
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">
+              Se copiarán los turnos de <strong className="text-slate-900">{prevMonth.label}</strong> a los
+              días equivalentes de <strong className="text-slate-900">{month.label}</strong> (mismo número de día).
+            </p>
+            <ul className="space-y-1.5 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+              <li className="flex items-start gap-2"><CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-600" /> No sobrescribe días que ya tengas asignados en {month.label}.</li>
+              <li className="flex items-start gap-2"><CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-600" /> Los días que no existen en el mes destino (ej. 31) se omiten.</li>
+              <li className="flex items-start gap-2"><AlertTriangle size={15} className="mt-0.5 shrink-0 text-amber-500" /> La copia mantiene el número de día; luego ajusta según festivos y domingos del mes.</li>
+            </ul>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setCopyOpen(false)} disabled={copying}>Cancelar</Button>
+              <Button onClick={runCopy} disabled={copying}>
+                <Copy size={15} /> {copying ? "Copiando…" : `Copiar ${prevMonth.label.replace(" 2026", "")}`}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <Modal
         open={!!edit}
