@@ -10,7 +10,7 @@ import { datesOfMonth, shortLabel, weekdayName, datesBetween } from "@/lib/date-
 import { cn } from "@/lib/utils";
 
 // Novedades registrables por rango (el descanso se maneja en el calendario).
-const NOVELTIES = ["VACAC", "INC", "COMP", "FAM"] as const;
+const NOVELTIES = ["VACAC", "INC", "COMP", "LIC", "FAM"] as const;
 
 /** Registro de vacaciones y novedades por rango de fechas. */
 export function VacationPanel() {

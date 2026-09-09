@@ -22,11 +22,12 @@ export const SPECIAL_CODES: Record<string, SpecialCodeMeta> = {
   VACAC: { code: "VACAC", label: "Vacaciones", abbr: "V", cell: "bg-emerald-100 text-emerald-700" },
   COMP: { code: "COMP", label: "Compensatorio", abbr: "C", cell: "bg-cyan-100 text-cyan-700" },
   INC: { code: "INC", label: "Incapacidad", abbr: "I", cell: "bg-rose-100 text-rose-700" },
+  LIC: { code: "LIC", label: "Licencia", abbr: "L", cell: "bg-teal-100 text-teal-700" },
   FAM: { code: "FAM", label: "Día de la familia", abbr: "F", cell: "bg-fuchsia-100 text-fuchsia-700" },
 };
 
 /** Orden de aparición de las novedades en los selectores. */
-export const SPECIAL_CODE_LIST = ["DESC", "VACAC", "COMP", "INC", "FAM"] as const;
+export const SPECIAL_CODE_LIST = ["DESC", "VACAC", "COMP", "INC", "LIC", "FAM"] as const;
 
 const SHIFT_RE = /^(\d{1,2})(?::(\d{2}))?-(\d{1,2})(?::(\d{2}))?(\*)?$/;
 

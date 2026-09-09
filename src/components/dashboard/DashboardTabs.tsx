@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LayoutGrid, CalendarRange, CalendarDays, Wand2, Plane, BarChart3, SlidersHorizontal, Clock } from "lucide-react";
+import { LayoutGrid, CalendarRange, CalendarDays, Wand2, Plane, BarChart3, SlidersHorizontal, Clock, Download } from "lucide-react";
 import { MONTH } from "@/lib/month";
 import { cn } from "@/lib/utils";
 import { EntitiesOverview } from "./EntitiesOverview";
@@ -12,8 +12,9 @@ import { AssignmentPanel } from "./AssignmentPanel";
 import { VacationPanel } from "./VacationPanel";
 import { RulesAdmin } from "./RulesAdmin";
 import { ShiftTypesAdmin } from "./ShiftTypesAdmin";
+import { ReportsPanel } from "./ReportsPanel";
 
-type TabId = "entidades" | "analitica" | "cobertura" | "calendario" | "asignar" | "vacaciones" | "horarios" | "reglas";
+type TabId = "entidades" | "analitica" | "cobertura" | "calendario" | "asignar" | "vacaciones" | "horarios" | "reglas" | "reportes";
 
 const TABS: { id: TabId; label: string; icon: typeof LayoutGrid }[] = [
   { id: "entidades", label: "Entidades", icon: LayoutGrid },
@@ -24,6 +25,7 @@ const TABS: { id: TabId; label: string; icon: typeof LayoutGrid }[] = [
   { id: "vacaciones", label: "Vacaciones", icon: Plane },
   { id: "horarios", label: "Horarios", icon: Clock },
   { id: "reglas", label: "Reglas", icon: SlidersHorizontal },
+  { id: "reportes", label: "Reportes", icon: Download },
 ];
 
 /** Panel dispatcher con navegación por secciones (sin scroll largo). */
@@ -74,6 +76,7 @@ export function DashboardTabs() {
           {tab === "vacaciones" && <VacationPanel />}
           {tab === "horarios" && <ShiftTypesAdmin />}
           {tab === "reglas" && <RulesAdmin />}
+          {tab === "reportes" && <ReportsPanel />}
         </div>
       </div>
     </div>
