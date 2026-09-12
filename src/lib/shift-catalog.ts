@@ -18,7 +18,7 @@ export interface SpecialCodeMeta {
 }
 
 export const SPECIAL_CODES: Record<string, SpecialCodeMeta> = {
-  DESC: { code: "DESC", label: "Descanso", abbr: "·", cell: "bg-slate-100 text-slate-400" },
+  DESC: { code: "DESC", label: "Descanso", abbr: "D", cell: "bg-slate-300 text-slate-700" },
   VACAC: { code: "VACAC", label: "Vacaciones", abbr: "V", cell: "bg-emerald-100 text-emerald-700" },
   COMP: { code: "COMP", label: "Compensatorio", abbr: "C", cell: "bg-cyan-100 text-cyan-700" },
   INC: { code: "INC", label: "Incapacidad", abbr: "I", cell: "bg-rose-100 text-rose-700" },
