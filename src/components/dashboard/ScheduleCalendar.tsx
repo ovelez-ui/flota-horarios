@@ -47,8 +47,6 @@ function cellLabel(shift: Shift): string {
 
 // Ancho mínimo de columna: suficiente para "08-15" (compacto para que quepa el mes).
 const COL_MIN = 40;
-// Ancho de la columna fija del repartidor (nombre + cédula + PDV).
-const NAME_COL = 220;
 
 interface EditState {
   driver: Driver;
@@ -166,12 +164,6 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   const zonePos = useMemo(
     () => pointsOfSale.filter((p) => p.zoneId === zoneId),
     [pointsOfSale, zoneId],
-  );
-
-  // Nombre del punto de venta por id (para mostrarlo junto al repartidor).
-  const posNameById = useMemo(
-    () => new Map(pointsOfSale.map((p) => [p.id, p.name])),
-    [pointsOfSale],
   );
 
   const zoneDrivers = useMemo(
@@ -424,15 +416,11 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
         </div>
 
         <div className="overflow-auto rounded-lg border border-slate-200">
-          <table className="w-full border-collapse text-xs">
+          <table className="border-collapse text-xs">
             <thead>
               <tr>
-                <th
-                  className="sticky left-0 z-20 border-b border-r border-slate-200 bg-slate-50 px-2 py-2 text-left align-bottom font-semibold text-slate-500 sm:px-3"
-                  style={{ minWidth: NAME_COL, width: NAME_COL }}
-                >
+                <th className="sticky left-0 z-20 border-b border-r border-slate-200 bg-slate-50 px-2 py-2 text-left font-semibold text-slate-500 sm:px-3">
                   Repartidor
-                  <span className="ml-1 font-normal text-slate-400">· cédula · PDV</span>
                 </th>
                 {visibleDates.map((d) => {
                   const day = parseISO(d);
@@ -469,22 +457,12 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
                 return (
                   <tr key={driver.id} className="hover:bg-slate-50/50">
                     <td
-                      className="sticky left-0 z-10 border-b border-r border-slate-100 bg-white px-2 py-1.5 align-middle sm:px-3"
-                      style={{ minWidth: NAME_COL, width: NAME_COL }}
+                      className="sticky left-0 z-10 max-w-[130px] border-b border-r border-slate-100 bg-white px-2 py-1.5 sm:max-w-[170px] sm:px-3"
+                      title={`${driver.name} · C.C. ${driver.id}`}
                     >
-                      <div className="truncate font-semibold text-slate-800" title={driver.name}>
-                        {driver.name}
-                      </div>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[10px] leading-tight text-slate-400">
-                        <span className="tabular-nums">C.C. {driver.id}</span>
-                        {posNameById.get(driver.basePointOfSaleId) && (
-                          <>
-                            <span className="text-slate-300">·</span>
-                            <span className="truncate" title={posNameById.get(driver.basePointOfSaleId)}>
-                              {posNameById.get(driver.basePointOfSaleId)}
-                            </span>
-                          </>
-                        )}
+                      <div className="truncate font-medium text-slate-700">{driver.name}</div>
+                      <div className="truncate text-[10px] leading-tight tabular-nums text-slate-400">
+                        C.C. {driver.id}
                       </div>
                     </td>
                     {visibleDates.map((d) => {
@@ -526,10 +504,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
             {zoneDrivers.length > 0 && (
               <tfoot>
                 <tr>
-                  <td
-                    className="sticky left-0 z-10 border-r border-t border-slate-200 bg-slate-50 px-2 py-1.5 font-semibold text-slate-600 sm:px-3"
-                    style={{ minWidth: NAME_COL, width: NAME_COL }}
-                  >
+                  <td className="sticky left-0 z-10 border-r border-t border-slate-200 bg-slate-50 px-2 py-1.5 font-semibold text-slate-600 sm:px-3">
                     Cubiertos
                   </td>
                   {visibleDates.map((d) => {
