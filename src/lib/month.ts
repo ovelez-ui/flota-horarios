@@ -19,13 +19,14 @@ function make(year: number, monthIndex: number, label: string): MonthDef {
 
 /** Meses habilitados para planificación. */
 export const MONTHS: MonthDef[] = [
+  make(2026, 8, "Septiembre 2026"),
   make(2026, 9, "Octubre 2026"),
   make(2026, 10, "Noviembre 2026"),
   make(2026, 11, "Diciembre 2026"),
 ];
 
-/** Mes por defecto (primero de la lista). */
-export const DEFAULT_MONTH: MonthDef = MONTHS[0]!;
+/** Mes por defecto: Octubre (es el que tiene la malla real cargada). */
+export const DEFAULT_MONTH: MonthDef = MONTHS.find((m) => m.prefix === "2026-10") ?? MONTHS[0]!;
 
 // --- Mes activo (estado de módulo, para consumidores no reactivos como el data-source) ---
 let active: MonthDef = DEFAULT_MONTH;
