@@ -1,10 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { LayoutGrid, CalendarRange, CalendarDays, Wand2, Plane, BarChart3, SlidersHorizontal, Clock, Download, Eye } from "lucide-react";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
+import { ReadOnlyBanner } from "@/components/ui";
 import { MonthSwitcher } from "./MonthSwitcher";
 import { cn } from "@/lib/utils";
+
+/**
+ * Envuelve una sección de edición. En solo lectura (supervisor) muestra el
+ * aviso y deshabilita todos los campos/botones con un `fieldset disabled`.
+ */
+function Section({ readOnly, children }: { readOnly: boolean; children: ReactNode }) {
+  if (!readOnly) return <>{children}</>;
+  return (
+    <div>
+      <ReadOnlyBanner />
+      <fieldset disabled className="m-0 min-w-0 border-0 p-0">
+        {children}
+      </fieldset>
+    </div>
+  );
+}
 import { EntitiesOverview } from "./EntitiesOverview";
 import { Analytics } from "./Analytics";
 import { CoverageBoard } from "./CoverageBoard";
@@ -17,26 +34,25 @@ import { ReportsPanel } from "./ReportsPanel";
 
 type TabId = "entidades" | "analitica" | "cobertura" | "calendario" | "asignar" | "vacaciones" | "horarios" | "reglas" | "reportes";
 
-/** `editing: true` marca las secciones que modifican datos (ocultas en solo lectura). */
-const TABS: { id: TabId; label: string; icon: typeof LayoutGrid; editing?: boolean }[] = [
+const TABS: { id: TabId; label: string; icon: typeof LayoutGrid }[] = [
   { id: "entidades", label: "Entidades", icon: LayoutGrid },
   { id: "analitica", label: "Analítica", icon: BarChart3 },
   { id: "cobertura", label: "Cobertura", icon: CalendarRange },
   { id: "calendario", label: "Calendario", icon: CalendarDays },
-  { id: "asignar", label: "Asignación", icon: Wand2, editing: true },
-  { id: "vacaciones", label: "Vacaciones", icon: Plane, editing: true },
-  { id: "horarios", label: "Horarios", icon: Clock, editing: true },
-  { id: "reglas", label: "Reglas", icon: SlidersHorizontal, editing: true },
+  { id: "asignar", label: "Asignación", icon: Wand2 },
+  { id: "vacaciones", label: "Vacaciones", icon: Plane },
+  { id: "horarios", label: "Horarios", icon: Clock },
+  { id: "reglas", label: "Reglas", icon: SlidersHorizontal },
   { id: "reportes", label: "Reportes", icon: Download },
 ];
 
 /**
  * Panel dispatcher con navegación por secciones.
- * `readOnly` (supervisores): oculta las secciones de edición y muestra el
- * calendario en modo consulta.
+ * `readOnly` (supervisores): muestra TODAS las secciones pero deshabilitadas
+ * (calendario en consulta; formularios y reglas bloqueados, sin guardar).
  */
 export function DashboardTabs({ readOnly = false }: { readOnly?: boolean }) {
-  const tabs = readOnly ? TABS.filter((t) => !t.editing) : TABS;
+  const tabs = TABS;
   const [tab, setTab] = useState<TabId>("entidades");
   const month = useFleetStore((s) => s.month);
 
@@ -90,10 +106,10 @@ export function DashboardTabs({ readOnly = false }: { readOnly?: boolean }) {
           {tab === "analitica" && <Analytics />}
           {tab === "cobertura" && <CoverageBoard />}
           {tab === "calendario" && <ScheduleCalendar readOnly={readOnly} />}
-          {tab === "asignar" && <AssignmentPanel />}
-          {tab === "vacaciones" && <VacationPanel />}
-          {tab === "horarios" && <ShiftTypesAdmin />}
-          {tab === "reglas" && <RulesAdmin />}
+          {tab === "asignar" && <Section readOnly={readOnly}><AssignmentPanel /></Section>}
+          {tab === "vacaciones" && <Section readOnly={readOnly}><VacationPanel /></Section>}
+          {tab === "horarios" && <Section readOnly={readOnly}><ShiftTypesAdmin /></Section>}
+          {tab === "reglas" && <Section readOnly={readOnly}><RulesAdmin /></Section>}
           {tab === "reportes" && <ReportsPanel />}
         </div>
       </div>

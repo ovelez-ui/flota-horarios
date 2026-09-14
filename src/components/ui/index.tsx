@@ -3,8 +3,18 @@
  * Componentes accesibles y componibles, sin dependencias externas de UI.
  */
 import * as React from "react";
-import { X } from "lucide-react";
+import { X, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+/** Aviso de solo lectura (perfil supervisor). */
+export function ReadOnlyBanner({ text }: { text?: string }) {
+  return (
+    <p className="mb-3 flex items-center gap-2 rounded-lg bg-slate-100 p-2.5 text-sm text-slate-500 ring-1 ring-inset ring-slate-200">
+      <Eye size={15} className="shrink-0" />
+      {text ?? "Vista de supervisor: solo lectura, no se pueden guardar cambios."}
+    </p>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Card
