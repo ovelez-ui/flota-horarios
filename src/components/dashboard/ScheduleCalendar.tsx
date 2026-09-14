@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useRef, useEffect } from "react";
-import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2, ChevronDown, ChevronRight, Copy } from "lucide-react";
+import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2, ChevronDown, ChevronRight, Copy, Plus } from "lucide-react";
 import type { Driver, RuleViolation, Shift, ShiftKind } from "@/types";
 import { REST_CODE } from "@/types";
 import { Badge, Button, Card, CardContent, Field, IconChip, Modal, Select } from "@/components/ui";
@@ -66,6 +66,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   const rules = useFleetStore((s) => s.rules);
   const month = useFleetStore((s) => s.month);
   const copyPreviousMonth = useFleetStore((s) => s.copyPreviousMonth);
+  const addShiftCode = useFleetStore((s) => s.addShiftCode);
   const customShiftCodes = useFleetStore((s) => s.customShiftCodes);
 
   // Mes anterior planificable (para "copiar como plantilla").
@@ -123,6 +124,20 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   const [brush, setBrush] = useState<string | null>(null);
   const [paintMsg, setPaintMsg] = useState<string | null>(null);
   const painting = useRef(false);
+
+  // Crear un turno nuevo al vuelo desde la paleta.
+  const [newCode, setNewCode] = useState("");
+  const [newCodeErr, setNewCodeErr] = useState<string | null>(null);
+  function addBrush() {
+    const r = addShiftCode(newCode);
+    if (r.ok && r.code) {
+      setBrush(r.code);
+      setNewCode("");
+      setNewCodeErr(null);
+    } else {
+      setNewCodeErr(r.error ?? "Código inválido. Ej: 09-18, 07-16*, 22-06, 13:40-21.");
+    }
+  }
 
   useEffect(() => {
     const stop = () => (painting.current = false);
@@ -377,12 +392,32 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
                   {codeLabel(c)}
                 </button>
               ))}
+
+              {/* Crear un turno nuevo al vuelo */}
+              <span className="mx-1 h-4 w-px bg-slate-300" aria-hidden />
+              <input
+                value={newCode}
+                onChange={(e) => { setNewCode(e.target.value); setNewCodeErr(null); }}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addBrush(); } }}
+                placeholder="Nuevo turno 09-18"
+                className="h-7 w-32 rounded-md border border-slate-300 bg-white px-2 text-[11px] text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600/30"
+                title="Escribe un turno (ej. 09-18, 07-16*, 22-06) y presiona +"
+              />
+              <button
+                onClick={addBrush}
+                disabled={!newCode.trim()}
+                className="flex items-center gap-1 rounded-md bg-brand-700 px-2 py-1 text-[11px] font-semibold text-white hover:bg-brand-800 disabled:opacity-40"
+                title="Crear y usar este turno"
+              >
+                <Plus size={12} /> Crear
+              </button>
             </div>
+            {newCodeErr && <p className="mt-1.5 text-[11px] text-accent">{newCodeErr}</p>}
             <p className="mt-2 flex items-center gap-1 text-[11px] text-slate-400">
               {brush ? (
                 <>Pintando <strong className="mx-1 text-slate-600">{codeLabel(brush)}</strong> — clic o arrastra sobre las celdas.</>
               ) : (
-                <>Elige un pincel para asignar rápido, o clic en una celda para editar con detalle.</>
+                <>Elige un pincel para asignar rápido, crea un turno nuevo con “Nuevo turno”, o clic en una celda para editar con detalle.</>
               )}
             </p>
             {paintMsg && <p className="mt-1 text-[11px] text-accent">⛔ {paintMsg}</p>}
