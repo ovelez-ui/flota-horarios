@@ -4,7 +4,11 @@ import { Truck } from "lucide-react";
 import { AppNav } from "@/components/AppNav";
 import { AuthGate } from "@/components/AuthGate";
 import { FleetGate } from "@/components/FleetGate";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import "./globals.css";
+
+// Aplica el tema guardado (o el del sistema) antes de pintar, para evitar parpadeo.
+const THEME_INIT = `(function(){try{var t=localStorage.getItem('flota-theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark');}catch(e){}})();`;
 
 export const metadata: Metadata = {
   title: "Flota Horarios · Pasteur",
@@ -15,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <body className="min-h-full font-sans">
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         <header className="glass sticky top-0 z-20 border-b border-white/60 shadow-[0_1px_3px_rgb(15_23_42/0.04)]">
           <div className="mx-auto flex h-14 max-w-[1760px] items-center justify-between px-4">
             <Link href="/" className="group flex shrink-0 items-center gap-2 whitespace-nowrap font-semibold text-brand-800">
@@ -23,7 +28,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </span>
               <span className="hidden sm:inline">Flota Horarios</span>
             </Link>
-            <AppNav />
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <AppNav />
+            </div>
           </div>
         </header>
         <main className="mx-auto max-w-[1760px] px-4 py-6">

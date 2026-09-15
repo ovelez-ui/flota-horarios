@@ -93,3 +93,90 @@ textarea,
   background: #94a3b8;
   background-clip: content-box;
 }
+
+/* ============================================================
+   Modo oscuro (activado con la clase .dark en <html>).
+   Reasigna las utilidades de color más usadas para tematizar
+   toda la app de forma centralizada, conservando los acentos.
+   ============================================================ */
+.dark body {
+  color: #e2e8f0;
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(37, 107, 173, 0.16), transparent 60%),
+    radial-gradient(900px 500px at -10% 0%, rgba(11, 122, 133, 0.1), transparent 55%),
+    #0b1220;
+}
+
+.dark .glass {
+  background-color: rgb(17 24 39 / 0.72);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .dark .glass {
+    background-color: #111827;
+  }
+}
+
+/* Superficies */
+.dark .bg-white { background-color: #111a2b; }
+.dark .bg-white\/95 { background-color: rgb(17 26 43 / 0.95); }
+.dark .bg-white\/90 { background-color: rgb(17 26 43 / 0.9); }
+.dark .bg-white\/80 { background-color: rgb(17 26 43 / 0.8); }
+.dark .bg-white\/60 { background-color: rgb(17 26 43 / 0.6); }
+.dark .bg-slate-50 { background-color: #0e1728; }
+.dark .bg-slate-50\/40 { background-color: rgb(14 23 40 / 0.5); }
+.dark .bg-slate-50\/50 { background-color: rgb(14 23 40 / 0.55); }
+.dark .bg-slate-50\/60 { background-color: rgb(14 23 40 / 0.6); }
+.dark .bg-slate-100 { background-color: #1c2740; }
+.dark .bg-slate-100\/80 { background-color: rgb(28 39 64 / 0.8); }
+.dark .bg-slate-200 { background-color: #263248; }
+.dark .bg-slate-300 { background-color: #3b4a63; }
+
+/* Texto */
+.dark .text-slate-900 { color: #f1f5f9; }
+.dark .text-slate-800 { color: #e6edf6; }
+.dark .text-slate-700 { color: #cdd8e6; }
+.dark .text-slate-600 { color: #a7b6ca; }
+.dark .text-slate-500 { color: #91a1b8; }
+.dark .text-slate-400 { color: #6b7c93; }
+
+/* Bordes y anillos */
+.dark .border-slate-100 { border-color: #1c2740; }
+.dark .border-slate-200 { border-color: #24304a; }
+.dark .border-slate-300 { border-color: #33415c; }
+.dark .border-slate-200\/70 { border-color: rgb(36 48 74 / 0.7); }
+.dark .border-white\/60 { border-color: rgb(255 255 255 / 0.07); }
+.dark .border-white\/70 { border-color: rgb(255 255 255 / 0.08); }
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #1c2740; }
+.dark .divide-slate-50 > :not([hidden]) ~ :not([hidden]) { border-color: #141d30; }
+.dark .ring-slate-200 { --tw-ring-color: #24304a; }
+.dark .ring-slate-900\/\[0\.03\] { --tw-ring-color: rgb(255 255 255 / 0.04); }
+
+/* Acentos de marca sobre fondo oscuro */
+.dark .bg-brand-50 { background-color: rgba(37, 107, 173, 0.16); }
+.dark .text-brand-700 { color: #7fb0de; }
+.dark .text-brand-800 { color: #9cc3e6; }
+.dark .ring-brand-100 { --tw-ring-color: rgba(37, 107, 173, 0.35); }
+.dark .border-brand-100 { border-color: rgba(37, 107, 173, 0.35); }
+
+/* Placeholders */
+.dark .placeholder\:text-slate-400::placeholder { color: #6b7c93; }
+
+/* Hovers frecuentes */
+.dark .hover\:bg-slate-50:hover { background-color: #0e1728; }
+.dark .hover\:bg-slate-50\/50:hover { background-color: rgb(14 23 40 / 0.55); }
+.dark .hover\:bg-slate-100:hover { background-color: #1c2740; }
+.dark .hover\:bg-slate-200:hover { background-color: #263248; }
+.dark .hover\:bg-white:hover { background-color: #16203a; }
+
+/* Scrollbar oscuro */
+.dark * {
+  scrollbar-color: #334155 transparent;
+}
+.dark *::-webkit-scrollbar-thumb {
+  background: #334155;
+  background-clip: content-box;
+}
+.dark *::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+  background-clip: content-box;
+}
