@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarPlus, CheckCircle2, Plane } from "lucide-react";
-import { Button, Card, CardContent, Field, IconChip, Select } from "@/components/ui";
+import { CalendarPlus, CheckCircle2, Plane, Search, X } from "lucide-react";
+import { Button, Card, CardContent, Field, IconChip, Input, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { SPECIAL_CODES } from "@/lib/shift-catalog";
 import { datesOfMonth, shortLabel, weekdayName, datesBetween } from "@/lib/date-utils";
@@ -19,6 +19,7 @@ export function VacationPanel() {
 
   const dates = useMemo(() => datesOfMonth(month.year, month.monthIndex), [month]);
   const [driverId, setDriverId] = useState(drivers[0]?.id ?? "");
+  const [driverQuery, setDriverQuery] = useState("");
   const [code, setCode] = useState<string>("VACAC");
   const [from, setFrom] = useState(dates[0]!);
   const [to, setTo] = useState(dates[Math.min(6, dates.length - 1)]!);
@@ -32,6 +33,21 @@ export function VacationPanel() {
     if (!dates.includes(to)) setTo(dates[Math.min(6, dates.length - 1)]!);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dates]);
+
+  // Filtra repartidores por nombre o cédula para asignar más ágil.
+  const filteredDrivers = useMemo(() => {
+    const q = driverQuery.trim().toLowerCase();
+    if (!q) return drivers;
+    return drivers.filter((d) => d.name.toLowerCase().includes(q) || d.id.includes(q));
+  }, [drivers, driverQuery]);
+
+  // Si el repartidor seleccionado sale del filtro, selecciona el primer resultado.
+  useEffect(() => {
+    if (filteredDrivers.length > 0 && !filteredDrivers.some((d) => d.id === driverId)) {
+      setDriverId(filteredDrivers[0]!.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredDrivers]);
 
   const dayCount = useMemo(() => datesBetween(from, to).length, [from, to]);
   const meta = SPECIAL_CODES[code]!;
@@ -64,10 +80,39 @@ export function VacationPanel() {
           Registra un rango de días de vacaciones, incapacidad, compensatorio o día de la familia.
         </p>
 
+        {/* Buscador de repartidor (por nombre o cédula) */}
+        <div className="mb-3">
+          <label className="relative block">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={driverQuery}
+              onChange={(e) => setDriverQuery(e.target.value)}
+              placeholder="Buscar repartidor por nombre o cédula…"
+              className="pl-9 pr-9"
+            />
+            {driverQuery && (
+              <button
+                type="button"
+                onClick={() => setDriverQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Limpiar búsqueda"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </label>
+          {driverQuery && (
+            <p className="mt-1 text-xs text-slate-400">
+              {filteredDrivers.length} resultado(s)
+            </p>
+          )}
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Repartidor">
             <Select value={driverId} onChange={(e) => setDriverId(e.target.value)}>
-              {drivers.map((d) => (
+              {filteredDrivers.length === 0 && <option value="">Sin resultados</option>}
+              {filteredDrivers.map((d) => (
                 <option key={d.id} value={d.id}>{d.name} · {d.id}</option>
               ))}
             </Select>
@@ -102,7 +147,7 @@ export function VacationPanel() {
           <span className="text-sm text-slate-500">
             {from > to ? "rango inválido" : `${dayCount} día(s)`}
           </span>
-          <Button onClick={submit} disabled={saving || from > to}>
+          <Button onClick={submit} disabled={saving || from > to || filteredDrivers.length === 0}>
             <CalendarPlus size={16} /> {saving ? "Registrando…" : "Registrar"}
           </Button>
           {msg && (
