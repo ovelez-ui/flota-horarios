@@ -22,10 +22,24 @@ import {
 import { weekdayName } from "@/lib/date-utils";
 import { DEFAULT_MONTH, MONTHS, setActiveMonth, type MonthDef } from "@/lib/month";
 import { source } from "@/lib/data-source";
+import type { Bootstrap } from "@/lib/api-client";
+import { hasSupabase } from "@/lib/supabase";
 import { parseShiftCode, isRestCode, distinctWorkCodes } from "@/lib/shift-catalog";
 
 /** Acota los turnos al mes de planificación indicado. */
 const scopeToMonth = (shifts: Shift[], prefix: string) => shifts.filter((s) => s.date.startsWith(prefix));
+
+/** Valida que el backend devolviera datos completos (mensaje claro si no). */
+function assertBootstrap(data: Bootstrap): Bootstrap {
+  if (!data || !Array.isArray(data.zones) || !Array.isArray(data.drivers) || !Array.isArray(data.shifts)) {
+    throw new Error(
+      hasSupabase
+        ? "El backend no devolvió datos. Revisa la conexión con Supabase."
+        : "Faltan las variables NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY en el despliegue.",
+    );
+  }
+  return data;
+}
 
 // Reglas de asignación persistidas en el navegador del coordinador.
 const RULES_KEY = "flota-rules-v1";
@@ -143,7 +157,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
     bootstrapping = (async () => {
       set({ loading: true, error: null });
       try {
-        const data = await source.bootstrap();
+        const data = assertBootstrap(await source.bootstrap());
         set({
           zones: data.zones,
           pointsOfSale: data.pointsOfSale,
@@ -164,7 +178,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
   refresh: async () => {
     set({ loading: true, error: null });
     try {
-      const data = await source.bootstrap();
+      const data = assertBootstrap(await source.bootstrap());
       set({
         zones: data.zones,
         pointsOfSale: data.pointsOfSale,
@@ -184,7 +198,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
     // mientras llega la nueva consulta al backend.
     set({ month: m, shifts: [], loading: true, error: null });
     try {
-      const data = await source.bootstrap();
+      const data = assertBootstrap(await source.bootstrap());
       set({
         zones: data.zones,
         pointsOfSale: data.pointsOfSale,
@@ -235,7 +249,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
         set({ loading: false, error: res.error ?? "No se pudo copiar el mes." });
         return { ok: false, error: res.error };
       }
-      const data = await source.bootstrap();
+      const data = assertBootstrap(await source.bootstrap());
       set({ shifts: scopeToMonth(data.shifts, target.prefix), loading: false });
       return { ok: true, count: res.count, skipped };
     } catch (e) {
