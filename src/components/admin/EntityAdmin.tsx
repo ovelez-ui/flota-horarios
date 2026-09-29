@@ -54,9 +54,11 @@ export function EntityAdmin() {
         ))}
       </div>
 
-      {tab === "zonas" && <ZonesAdmin />}
-      {tab === "puntos" && <PointsAdmin />}
-      {tab === "repartidores" && <DriversAdmin />}
+      <div key={tab} className="animate-fade-in">
+        {tab === "zonas" && <ZonesAdmin />}
+        {tab === "puntos" && <PointsAdmin />}
+        {tab === "repartidores" && <DriversAdmin />}
+      </div>
     </div>
   );
 }

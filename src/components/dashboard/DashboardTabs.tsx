@@ -160,7 +160,7 @@ export function DashboardTabs({ readOnly = false }: { readOnly?: boolean }) {
           </div>
         </aside>
 
-        <div className="min-w-0 flex-1">
+        <div key={tab} className="min-w-0 flex-1 animate-fade-in">
           {tab === "entidades" && <EntitiesOverview />}
           {tab === "analitica" && <Analytics />}
           {tab === "cobertura" && <CoverageBoard />}

@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <body className="min-h-full font-sans">
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         <header className="glass sticky top-0 z-20 border-b border-white/60 shadow-[0_1px_3px_rgb(15_23_42/0.04)]">
