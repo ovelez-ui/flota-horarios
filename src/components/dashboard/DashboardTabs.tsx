@@ -114,7 +114,7 @@ export function DashboardTabs({ readOnly = false }: { readOnly?: boolean }) {
         <div className="flex items-center gap-3">
           <IconChip icon={<LayoutDashboard size={18} />} className="h-11 w-11" />
           <div>
-            <h1 className="flex flex-wrap items-center gap-2 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-light tracking-tight text-slate-900 sm:text-3xl">
               Panel de control
               {readOnly && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-200">

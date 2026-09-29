@@ -55,8 +55,10 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-3xl py-10">
-      <h1 className="text-2xl font-bold text-slate-900">Plataforma de horarios de flota</h1>
-      <p className="mt-2 text-slate-600">
+      <h1 className="text-4xl font-light leading-[1.05] tracking-tight text-slate-900 sm:text-5xl">
+        Plataforma de horarios de flota
+      </h1>
+      <p className="mt-3 text-slate-600">
         Consulta y gestión de turnos para repartidores de Farmacias Pasteur.
       </p>
 

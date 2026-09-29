@@ -43,7 +43,7 @@ export function DriverConsole() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Consulta de turnos</h1>
+        <h1 className="text-2xl font-light tracking-tight text-slate-900 sm:text-3xl">Consulta de turnos</h1>
         <p className="text-sm text-slate-600">
           Ingresa tu cédula para ver tu malla del mes.
         </p>
