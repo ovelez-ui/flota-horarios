@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Download, FileSpreadsheet, Users, CalendarClock } from "lucide-react";
-import { Button, Card, CardContent, Field, IconChip, Select } from "@/components/ui";
+import { Button, Card, CardContent, Eyebrow, Field, IconChip, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { isRestCode, codeLabel } from "@/lib/shift-catalog";
 import { sundayCompensationAlerts, totalBreakHours } from "@/lib/shift-rules";
@@ -119,6 +119,7 @@ export function ReportsPanel() {
   return (
     <Card>
       <CardContent className="pt-5">
+        <Eyebrow className="mb-2">Exportación</Eyebrow>
         <h2 className="mb-1 flex items-center gap-2 font-semibold text-slate-900">
           <IconChip icon={<Download size={16} />} /> Reportes
         </h2>

@@ -4,7 +4,7 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2, ChevronDown, ChevronRight, Copy, Plus } from "lucide-react";
 import type { Driver, RuleViolation, Shift, ShiftKind } from "@/types";
 import { REST_CODE } from "@/types";
-import { Badge, Button, Card, CardContent, Field, IconChip, Modal, Select } from "@/components/ui";
+import { Badge, Button, Card, CardContent, Eyebrow, Field, IconChip, Modal, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { MONTHS } from "@/lib/month";
 import { MonthSwitcher } from "./MonthSwitcher";
@@ -272,6 +272,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   return (
     <Card>
       <CardContent className="pt-5">
+        <Eyebrow className="mb-2">Planificación</Eyebrow>
         <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 font-semibold text-slate-900">
             <IconChip icon={<CalendarDays size={16} />} /> Malla mensual · {month.label}

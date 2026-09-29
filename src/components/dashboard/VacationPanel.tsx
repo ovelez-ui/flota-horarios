@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CalendarPlus, CheckCircle2, Plane, Search, X } from "lucide-react";
-import { Button, Card, CardContent, Field, IconChip, Input, Select } from "@/components/ui";
+import { Button, Card, CardContent, Eyebrow, Field, IconChip, Input, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { SPECIAL_CODES } from "@/lib/shift-catalog";
 import { datesOfMonth, shortLabel, weekdayName, datesBetween } from "@/lib/date-utils";
@@ -73,6 +73,7 @@ export function VacationPanel() {
   return (
     <Card>
       <CardContent className="pt-5">
+        <Eyebrow className="mb-2">Novedades</Eyebrow>
         <h2 className="mb-1 flex items-center gap-2 font-semibold text-slate-900">
           <IconChip icon={<Plane size={16} />} /> Vacaciones y novedades
         </h2>

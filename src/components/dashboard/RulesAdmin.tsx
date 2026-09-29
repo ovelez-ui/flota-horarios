@@ -2,7 +2,7 @@
 
 import { SlidersHorizontal, RotateCcw, CheckCircle2 } from "lucide-react";
 import { DEFAULT_RULES } from "@/types";
-import { Button, Card, CardContent, Field, IconChip, Input } from "@/components/ui";
+import { Button, Card, CardContent, Eyebrow, Field, IconChip, Input } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 
 /** Administrador del motor de reglas de asignación. */
@@ -15,6 +15,7 @@ export function RulesAdmin() {
   return (
     <Card>
       <CardContent className="pt-5">
+        <Eyebrow className="mb-2">Configuración</Eyebrow>
         <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 font-semibold text-slate-900">
             <IconChip icon={<SlidersHorizontal size={16} />} /> Reglas de asignación

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Clock, Plus, X } from "lucide-react";
 import type { Shift } from "@/types";
-import { Button, Card, CardContent, Field, IconChip, Input } from "@/components/ui";
+import { Button, Card, CardContent, Eyebrow, Field, IconChip, Input } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import {
   parseShiftCode,
@@ -77,6 +77,7 @@ export function ShiftTypesAdmin() {
   return (
     <Card>
       <CardContent className="pt-5">
+        <Eyebrow className="mb-2">Configuración</Eyebrow>
         <h2 className="mb-1 flex items-center gap-2 font-semibold text-slate-900">
           <IconChip icon={<Clock size={16} />} /> Administrador de horarios
         </h2>

@@ -6,7 +6,7 @@ import {
   Search, ChevronRight, X,
 } from "lucide-react";
 import type { Driver, Shift, ShiftKind } from "@/types";
-import { Card, CardContent, IconChip, Input, Select } from "@/components/ui";
+import { Card, CardContent, Eyebrow, IconChip, Input, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { totalHours, workedDays, restDays } from "@/lib/shift-rules";
 import { shiftKind, isRestCode, specialMeta, SPECIAL_CODE_LIST, SPECIAL_CODES } from "@/lib/shift-catalog";
@@ -241,6 +241,7 @@ export function Analytics() {
     <div className="space-y-5">
       <Card>
         <CardContent className="pt-5">
+          <Eyebrow className="mb-2">Indicadores</Eyebrow>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="flex items-center gap-2 font-semibold text-slate-900">
               <IconChip icon={<BarChart3 size={16} />} /> Analítica por zona · {month.label}

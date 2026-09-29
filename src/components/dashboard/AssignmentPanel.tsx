@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Wand2, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import type { RuleViolation } from "@/types";
-import { Button, Card, CardContent, IconChip, Select, Badge } from "@/components/ui";
+import { Button, Card, CardContent, Eyebrow, IconChip, Select, Badge } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { shiftCodeOptions, codeLabel } from "@/lib/shift-catalog";
 import { datesOfMonth, shortLabel, weekdayName } from "@/lib/date-utils";
@@ -92,6 +92,7 @@ export function AssignmentPanel() {
   return (
     <Card>
       <CardContent className="pt-5">
+        <Eyebrow className="mb-2">Asignación</Eyebrow>
         <h2 className="mb-1 flex items-center gap-2 font-semibold text-slate-900">
           <IconChip icon={<Wand2 size={16} />} /> Asignar turno
         </h2>
