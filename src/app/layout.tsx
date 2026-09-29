@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Truck } from "lucide-react";
+import { Bike } from "lucide-react";
 import { AppNav } from "@/components/AppNav";
 import { AuthGate } from "@/components/AuthGate";
 import { FleetGate } from "@/components/FleetGate";
@@ -22,11 +22,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         <header className="glass sticky top-0 z-20 border-b border-white/60 shadow-[0_1px_3px_rgb(15_23_42/0.04)]">
           <div className="mx-auto flex h-14 max-w-[1760px] items-center justify-between px-4">
-            <Link href="/" className="group flex shrink-0 items-center gap-2 whitespace-nowrap font-semibold text-brand-800">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 text-white shadow-glow ring-1 ring-inset ring-white/20 transition-transform duration-200 group-hover:scale-105">
-                <Truck size={18} strokeWidth={2.25} />
+            <Link href="/" className="group flex shrink-0 items-center gap-2.5 whitespace-nowrap">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 text-white shadow-glow ring-1 ring-inset ring-white/20 transition-transform duration-200 group-hover:scale-105">
+                <Bike size={19} strokeWidth={2.25} />
               </span>
-              <span className="hidden sm:inline">Flota Horarios</span>
+              <span className="leading-none">
+                <span className="block text-[15px] font-extrabold tracking-tight text-brand-800 sm:text-base">
+                  Flota Horarios
+                </span>
+                <span className="mt-0.5 hidden text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400 sm:block">
+                  Última milla · motorizados
+                </span>
+              </span>
             </Link>
             <div className="flex items-center gap-1">
               <ThemeToggle />
