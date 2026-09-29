@@ -115,13 +115,16 @@ export function Badge({
 // Button
 // ---------------------------------------------------------------------------
 
-type ButtonVariant = "primary" | "outline" | "ghost";
+type ButtonVariant = "primary" | "outline" | "ghost" | "glass";
 
 const buttonStyles: Record<ButtonVariant, string> = {
   primary:
     "bg-gradient-to-b from-brand-600 to-brand-700 text-white shadow-sm hover:from-brand-700 hover:to-brand-800 hover:shadow-pop active:translate-y-px",
   outline: "border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-slate-400 hover:bg-slate-50",
   ghost: "text-slate-600 hover:bg-slate-100",
+  // Botón "glass" (estilo iData): translúcido con desenfoque; se adapta a claro/oscuro.
+  glass:
+    "bg-white/60 text-slate-700 ring-1 ring-inset ring-slate-200 backdrop-blur-sm hover:bg-white hover:shadow-sm",
 };
 
 export function Button({
@@ -132,7 +135,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:ring-offset-1 disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:ring-offset-1 disabled:pointer-events-none disabled:opacity-50",
         buttonStyles[variant],
         className,
       )}
