@@ -54,29 +54,35 @@ export default function HomePage() {
         : [repartidor, calendario];
 
   return (
-    <div className="mx-auto max-w-3xl py-10">
-      <Eyebrow>Plataforma operativa · Pasteur</Eyebrow>
-      <h1 className="mt-3 text-4xl font-light leading-[1.05] tracking-tight text-slate-900 sm:text-5xl">
-        Plataforma de horarios de flota
-      </h1>
-      <p className="mt-3 text-slate-600">
-        Consulta y gestión de turnos para repartidores de Farmacias Pasteur.
-      </p>
+    <div className="mx-auto max-w-4xl py-12 sm:py-16">
+      <div className="max-w-2xl">
+        <Eyebrow>Plataforma operativa · Pasteur</Eyebrow>
+        <h1 className="mt-4 text-4xl font-light leading-[1.03] tracking-tight text-slate-900 sm:text-6xl">
+          Plataforma de horarios de flota
+        </h1>
+        <p className="mt-4 max-w-xl text-lg leading-relaxed text-slate-600">
+          Consulta y gestión de turnos para repartidores de Farmacias Pasteur.
+        </p>
+      </div>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+      <div className="mt-10 grid gap-4 sm:grid-cols-2">
         {entries.map((e) => (
-          <Link key={e.href} href={e.href} className="group">
-            <Card className="h-full transition-shadow hover:shadow-md">
-              <CardContent className="pt-5">
-                <div className={`grid h-10 w-10 place-items-center rounded-lg ${e.tint}`}>
+          <Link key={e.href} href={e.href}>
+            <Card className="h-full p-6 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-pop">
+              <div className="flex items-start justify-between">
+                <span className={`grid h-12 w-12 place-items-center rounded-xl ${e.tint}`}>
                   {e.icon}
-                </div>
-                <h2 className="mt-3 flex items-center gap-1 font-semibold text-slate-900">
-                  {e.title}
-                  <ArrowRight size={16} className="opacity-0 transition group-hover:opacity-100" />
-                </h2>
-                <p className="mt-1 text-sm text-slate-600">{e.desc}</p>
-              </CardContent>
+                </span>
+                <ArrowRight
+                  size={18}
+                  className="text-slate-300 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-brand-600"
+                />
+              </div>
+              <h2 className="mt-4 text-lg font-semibold text-slate-900">{e.title}</h2>
+              <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{e.desc}</p>
+              <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand-700">
+                Entrar <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+              </span>
             </Card>
           </Link>
         ))}

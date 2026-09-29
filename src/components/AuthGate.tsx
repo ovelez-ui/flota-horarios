@@ -13,16 +13,19 @@ function LoginForm() {
   const [password, setPassword] = useState("");
 
   return (
-    <div className="flex min-h-[70vh] items-center justify-center">
-      <Card className="w-full max-w-sm overflow-hidden shadow-soft">
-        <div className="flex items-center gap-3 bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 p-5 text-white">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/15 ring-1 ring-white/25">
-            <Truck size={20} />
+    <div className="flex min-h-[78vh] items-center justify-center px-4">
+      <Card className="w-full max-w-sm overflow-hidden shadow-pop">
+        <div className="relative overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 p-6 text-white">
+          {/* Glow decorativo */}
+          <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/25">
+            <Truck size={22} />
           </span>
-          <div>
-            <p className="text-[15px] font-semibold leading-tight">Flota Horarios</p>
-            <p className="text-xs text-brand-100">Ingresa para continuar</p>
-          </div>
+          <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-100/90">
+            Acceso operativo
+          </p>
+          <p className="mt-1 text-2xl font-light leading-tight tracking-tight">Flota Horarios</p>
+          <p className="mt-1 text-sm text-brand-100">Ingresa para continuar</p>
         </div>
         <CardContent className="pt-5">
           <form
@@ -52,10 +55,13 @@ function LoginForm() {
               />
             </Field>
             {error && <p className="text-sm text-accent">{error}</p>}
-            <Button type="submit" className="w-full" disabled={signingIn}>
+            <Button type="submit" className="mt-1 w-full" disabled={signingIn}>
               <LogIn size={16} /> {signingIn ? "Ingresando…" : "Ingresar"}
             </Button>
           </form>
+          <p className="mt-4 text-center text-xs text-slate-400">
+            Acceso restringido · Farmacias Pasteur
+          </p>
         </CardContent>
       </Card>
     </div>
