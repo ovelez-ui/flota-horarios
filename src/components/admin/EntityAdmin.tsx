@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { MapPin, Building2, Users, RotateCcw } from "lucide-react";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
-import { Button } from "@/components/ui";
+import { Button, Eyebrow } from "@/components/ui";
 import { ZonesAdmin } from "./ZonesAdmin";
 import { PointsAdmin } from "./PointsAdmin";
 import { DriversAdmin } from "./DriversAdmin";
@@ -26,8 +26,9 @@ export function EntityAdmin() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Administración</h1>
-          <p className="text-sm text-slate-600">
+          <Eyebrow>Configuración</Eyebrow>
+          <h1 className="mt-1.5 text-2xl font-light tracking-tight text-slate-900 sm:text-3xl">Administración</h1>
+          <p className="mt-1 text-sm text-slate-600">
             Gestiona zonas, puntos de venta y repartidores. Los cambios se guardan en el servidor.
           </p>
         </div>

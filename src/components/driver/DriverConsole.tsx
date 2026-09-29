@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Search, CreditCard, AlertCircle } from "lucide-react";
 import type { DriverMonthlySummary } from "@/types";
-import { Button, Card, CardContent, Input } from "@/components/ui";
+import { Button, Card, CardContent, Eyebrow, Input } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { totalHours, workedDays, restDays, totalBreakHours } from "@/lib/shift-rules";
 import { DriverInfoCard } from "./DriverInfoCard";
@@ -43,8 +43,9 @@ export function DriverConsole() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <h1 className="text-2xl font-light tracking-tight text-slate-900 sm:text-3xl">Consulta de turnos</h1>
-        <p className="text-sm text-slate-600">
+        <Eyebrow>Vista repartidor</Eyebrow>
+        <h1 className="mt-1.5 text-2xl font-light tracking-tight text-slate-900 sm:text-3xl">Consulta de turnos</h1>
+        <p className="mt-1 text-sm text-slate-600">
           Ingresa tu cédula para ver tu malla del mes.
         </p>
       </div>

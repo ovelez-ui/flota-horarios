@@ -39,19 +39,23 @@ export function DriverInfoCard({ summary }: { summary: DriverMonthlySummary }) {
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex items-center justify-between gap-4 border-b border-slate-100 bg-brand-700 p-5 text-white">
-        <div className="flex items-center gap-3">
-          <div className="grid h-12 w-12 place-items-center rounded-full bg-white/15 ring-1 ring-white/25">
-            <User size={22} />
+      <div className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 p-5 text-white">
+        <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-white/10 blur-2xl" />
+        <div className="relative flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/25">
+              <User size={22} />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-100/90">Repartidor</p>
+              <p className="text-xl font-light leading-tight tracking-tight">{driver.name}</p>
+              <p className="text-sm text-brand-100">C.C. {driver.id}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-lg font-semibold leading-tight">{driver.name}</p>
-            <p className="text-sm text-brand-100">C.C. {driver.id}</p>
-          </div>
+          <Badge variant={status.variant} className="bg-white/90">
+            {status.label}
+          </Badge>
         </div>
-        <Badge variant={status.variant} className="bg-white/90">
-          {status.label}
-        </Badge>
       </div>
 
       <div className="grid gap-px bg-slate-100 sm:grid-cols-2 lg:grid-cols-5">
