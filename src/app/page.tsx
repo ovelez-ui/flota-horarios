@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { UserSearch, LayoutDashboard, CalendarDays, ArrowRight, Eye } from "lucide-react";
-import { Card, CardContent } from "@/components/ui";
+import { Card, CardContent, Eyebrow } from "@/components/ui";
 import { useAuth } from "@/hooks/use-auth";
 
 interface Entry {
@@ -55,7 +55,8 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-3xl py-10">
-      <h1 className="text-4xl font-light leading-[1.05] tracking-tight text-slate-900 sm:text-5xl">
+      <Eyebrow>Plataforma operativa · Pasteur</Eyebrow>
+      <h1 className="mt-3 text-4xl font-light leading-[1.05] tracking-tight text-slate-900 sm:text-5xl">
         Plataforma de horarios de flota
       </h1>
       <p className="mt-3 text-slate-600">

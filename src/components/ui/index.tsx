@@ -80,6 +80,20 @@ export function IconChip({
   );
 }
 
+/** Etiqueta "eyebrow": micro-título en mayúsculas con tracking (estilo iData). */
+export function Eyebrow({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-600 dark:text-brand-300",
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Badge
 // ---------------------------------------------------------------------------

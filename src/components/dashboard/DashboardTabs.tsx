@@ -6,7 +6,7 @@ import {
   SlidersHorizontal, Clock, Download, Eye, LayoutDashboard,
 } from "lucide-react";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
-import { ReadOnlyBanner, IconChip } from "@/components/ui";
+import { ReadOnlyBanner, IconChip, Eyebrow } from "@/components/ui";
 import { MonthSwitcher } from "./MonthSwitcher";
 import { cn } from "@/lib/utils";
 import { EntitiesOverview } from "./EntitiesOverview";
@@ -114,7 +114,8 @@ export function DashboardTabs({ readOnly = false }: { readOnly?: boolean }) {
         <div className="flex items-center gap-3">
           <IconChip icon={<LayoutDashboard size={18} />} className="h-11 w-11" />
           <div>
-            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-light tracking-tight text-slate-900 sm:text-3xl">
+            <Eyebrow>{readOnly ? "Supervisión de flota" : "Gestión operativa"}</Eyebrow>
+            <h1 className="mt-1.5 flex flex-wrap items-center gap-2 text-2xl font-light tracking-tight text-slate-900 sm:text-3xl">
               Panel de control
               {readOnly && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-200">
