@@ -101,18 +101,21 @@ textarea,
    ============================================================ */
 .dark body {
   color: #e2e8f0;
+  /* Fondo inmersivo (estilo iData): navy profundo con glows suaves de marca. */
   background:
-    radial-gradient(1200px 600px at 100% -10%, rgba(37, 107, 173, 0.16), transparent 60%),
-    radial-gradient(900px 500px at -10% 0%, rgba(11, 122, 133, 0.1), transparent 55%),
-    #0b1220;
+    radial-gradient(1100px 560px at 100% -8%, rgba(37, 107, 173, 0.2), transparent 58%),
+    radial-gradient(900px 520px at -8% 3%, rgba(11, 122, 133, 0.13), transparent 55%),
+    radial-gradient(760px 520px at 50% 110%, rgba(37, 107, 173, 0.1), transparent 60%),
+    #08111f;
+  background-attachment: fixed;
 }
 
 .dark .glass {
-  background-color: rgb(17 24 39 / 0.72);
+  background-color: rgb(12 21 37 / 0.72);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .dark .glass {
-    background-color: #111827;
+    background-color: #0d1626;
   }
 }
 
