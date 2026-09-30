@@ -170,6 +170,38 @@ textarea,
 .dark .ring-brand-100 { --tw-ring-color: rgba(37, 107, 173, 0.35); }
 .dark .border-brand-100 { border-color: rgba(37, 107, 173, 0.35); }
 
+/* Tintes de color (celdas de la malla, insignias, leyenda, cobertura) en oscuro:
+   versiones apagadas y translúcidas con texto claro, para cohesión con el tema. */
+.dark .bg-sky-100 { background-color: rgba(56, 189, 248, 0.15); }
+.dark .text-sky-800 { color: #bae6fd; }
+.dark .bg-violet-100 { background-color: rgba(167, 139, 250, 0.17); }
+.dark .text-violet-800 { color: #ddd6fe; }
+.dark .bg-amber-100 { background-color: rgba(251, 191, 36, 0.16); }
+.dark .text-amber-800, .dark .text-amber-700 { color: #fde68a; }
+.dark .bg-indigo-100 { background-color: rgba(129, 140, 248, 0.2); }
+.dark .text-indigo-800 { color: #c7d2fe; }
+.dark .bg-emerald-100 { background-color: rgba(52, 211, 153, 0.16); }
+.dark .text-emerald-700, .dark .text-emerald-600 { color: #a7f3d0; }
+.dark .bg-cyan-100 { background-color: rgba(34, 211, 238, 0.16); }
+.dark .text-cyan-700 { color: #a5f3fc; }
+.dark .bg-rose-100 { background-color: rgba(251, 113, 133, 0.17); }
+.dark .text-rose-700 { color: #fecdd3; }
+.dark .bg-teal-100 { background-color: rgba(45, 212, 191, 0.16); }
+.dark .text-teal-700 { color: #99f6e4; }
+.dark .bg-fuchsia-100 { background-color: rgba(232, 121, 249, 0.16); }
+.dark .text-fuchsia-700 { color: #f5d0fe; }
+/* Franjas suaves (KPIs, cobertura, filas) */
+.dark .bg-sky-50 { background-color: rgba(14, 165, 233, 0.1); }
+.dark .bg-violet-50 { background-color: rgba(139, 92, 246, 0.1); }
+.dark .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.12); }
+.dark .bg-amber-50 { background-color: rgba(245, 158, 11, 0.1); }
+.dark .bg-rose-50 { background-color: rgba(244, 63, 94, 0.1); }
+.dark .bg-accent-soft { background-color: rgba(226, 35, 26, 0.16); }
+.dark .text-accent { color: #fca5a5; }
+/* Bordes de acento (columna de feriado) */
+.dark .border-amber-300 { border-color: rgba(251, 191, 36, 0.4); }
+.dark .border-l-amber-300 { border-left-color: rgba(251, 191, 36, 0.4); }
+
 /* Placeholders */
 .dark .placeholder\:text-slate-400::placeholder { color: #6b7c93; }
 
