@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, useRef, useEffect } from "react";
-import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2, ChevronDown, ChevronRight, Copy, Plus } from "lucide-react";
+import { Fragment, useMemo, useState, useRef, useEffect } from "react";
+import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2, ChevronDown, ChevronRight, Copy, Plus, Building2, Check } from "lucide-react";
 import type { Driver, RuleViolation, Shift, ShiftKind } from "@/types";
 import { REST_CODE } from "@/types";
 import { Badge, Button, Card, CardContent, Eyebrow, Field, IconChip, Modal, Select } from "@/components/ui";
@@ -92,7 +92,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   }, [dates]);
 
   const [zoneId, setZoneId] = useState(zones[0]?.id ?? "");
-  const [posId, setPosId] = useState<string>(""); // "" = todos los puntos de venta
+  const [posIds, setPosIds] = useState<string[]>([]); // vacío = todas las tiendas
   const [showComp, setShowComp] = useState(false); // detalle de compensatorios pendientes
   const [view, setView] = useState<number | "all">(0); // índice de semana o "all"
   const [edit, setEdit] = useState<EditState | null>(null);
@@ -181,13 +181,33 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
     [pointsOfSale, zoneId],
   );
 
+  // Nombre de punto de venta por id (para etiquetas y grupos).
+  const posNameById = useMemo(() => new Map(pointsOfSale.map((p) => [p.id, p.name])), [pointsOfSale]);
+
   const zoneDrivers = useMemo(
     () =>
       drivers.filter(
-        (d) => d.zoneId === zoneId && (posId === "" || d.basePointOfSaleId === posId),
+        (d) => d.zoneId === zoneId && (posIds.length === 0 || posIds.includes(d.basePointOfSaleId)),
       ),
-    [drivers, zoneId, posId],
+    [drivers, zoneId, posIds],
   );
+
+  // Repartidores agrupados por tienda (punto de venta base), en el orden de la zona.
+  const groups = useMemo(() => {
+    const byPos = new Map<string, Driver[]>();
+    for (const d of zoneDrivers) {
+      const arr = byPos.get(d.basePointOfSaleId) ?? [];
+      arr.push(d);
+      byPos.set(d.basePointOfSaleId, arr);
+    }
+    const out: { id: string; name: string; drivers: Driver[] }[] = [];
+    for (const p of zonePos) {
+      const ds = byPos.get(p.id);
+      if (ds && ds.length) { out.push({ id: p.id, name: p.name, drivers: ds }); byPos.delete(p.id); }
+    }
+    for (const [pid, ds] of byPos) out.push({ id: pid, name: posNameById.get(pid) ?? "Sin punto de venta", drivers: ds });
+    return out;
+  }, [zoneDrivers, zonePos, posNameById]);
 
   // Alerta: domingos trabajados en la zona sin compensatorio dentro de la ventana.
   // Se agrupa por repartidor para no saturar la malla.
@@ -281,7 +301,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
             <MonthSwitcher />
             <Select
               value={zoneId}
-              onChange={(e) => { setZoneId(e.target.value); setPosId(""); }}
+              onChange={(e) => { setZoneId(e.target.value); setPosIds([]); }}
               className="h-9 w-auto"
               title="Filtrar por zona"
             >
@@ -289,17 +309,49 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
                 <option key={z.id} value={z.id}>{z.name}</option>
               ))}
             </Select>
-            <Select
-              value={posId}
-              onChange={(e) => setPosId(e.target.value)}
-              className="h-9 w-auto"
-              title="Filtrar por punto de venta"
-            >
-              <option value="">Todos los puntos de venta</option>
-              {zonePos.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </Select>
+
+            {/* Filtro multi-tienda */}
+            <details className="relative">
+              <summary className="flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 hover:border-slate-400 [&::-webkit-details-marker]:hidden">
+                <Building2 size={14} className="text-slate-400" />
+                {posIds.length === 0
+                  ? "Todas las tiendas"
+                  : posIds.length === 1
+                    ? (posNameById.get(posIds[0]!) ?? "1 tienda")
+                    : `${posIds.length} tiendas`}
+                <ChevronDown size={14} className="text-slate-400" />
+              </summary>
+              <div className="absolute right-0 z-30 mt-1 max-h-72 w-72 overflow-auto rounded-lg border border-slate-200 bg-white p-1.5 shadow-pop">
+                <button
+                  type="button"
+                  onClick={() => setPosIds([])}
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-100"
+                >
+                  <span className={cn("grid h-4 w-4 shrink-0 place-items-center rounded border", posIds.length === 0 ? "border-brand-600 bg-brand-600 text-white" : "border-slate-300")}>
+                    {posIds.length === 0 && <Check size={11} />}
+                  </span>
+                  Todas las tiendas
+                </button>
+                <div className="my-1 h-px bg-slate-100" />
+                {zonePos.map((p) => {
+                  const on = posIds.includes(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setPosIds(on ? posIds.filter((x) => x !== p.id) : [...posIds, p.id])}
+                      className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-100"
+                    >
+                      <span className={cn("grid h-4 w-4 shrink-0 place-items-center rounded border", on ? "border-brand-600 bg-brand-600 text-white" : "border-slate-300")}>
+                        {on && <Check size={11} />}
+                      </span>
+                      <span className="truncate">{p.name}</span>
+                    </button>
+                  );
+                })}
+                {zonePos.length === 0 && <p className="px-2 py-1.5 text-xs text-slate-400">La zona no tiene puntos de venta.</p>}
+              </div>
+            </details>
             {!readOnly && prevMonth && (
               <Button
                 variant="outline"
@@ -488,9 +540,21 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
               </tr>
             </thead>
             <tbody>
-              {zoneDrivers.map((driver) => {
-                const m = byDriver.get(driver.id);
-                return (
+              {groups.map((g) => (
+                <Fragment key={g.id}>
+                  <tr>
+                    <td className="sticky left-0 z-10 border-y border-r border-slate-200 bg-slate-100 px-2 py-1.5 sm:px-3">
+                      <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+                        <Building2 size={12} className="shrink-0 text-slate-400" />
+                        <span className="truncate" title={g.name}>{g.name}</span>
+                        <span className="font-normal text-slate-400">· {g.drivers.length}</span>
+                      </span>
+                    </td>
+                    <td colSpan={visibleDates.length} className="border-y border-slate-200 bg-slate-50" />
+                  </tr>
+                  {g.drivers.map((driver) => {
+                    const m = byDriver.get(driver.id);
+                    return (
                   <tr key={driver.id} className="hover:bg-slate-50/50">
                     <td
                       className="sticky left-0 z-10 max-w-[130px] border-b border-r border-slate-100 bg-white px-2 py-1.5 sm:max-w-[170px] sm:px-3"
@@ -527,12 +591,14 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
                       );
                     })}
                   </tr>
-                );
-              })}
-              {zoneDrivers.length === 0 && (
+                    );
+                  })}
+                </Fragment>
+              ))}
+              {groups.length === 0 && (
                 <tr>
                   <td colSpan={visibleDates.length + 1} className="px-3 py-8 text-center text-slate-400">
-                    {posId ? "No hay repartidores en ese punto de venta." : "La zona no tiene repartidores."}
+                    {posIds.length ? "No hay repartidores en las tiendas seleccionadas." : "La zona no tiene repartidores."}
                   </td>
                 </tr>
               )}
