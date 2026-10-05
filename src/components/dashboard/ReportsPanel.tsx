@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Download, FileSpreadsheet, Users, CalendarClock } from "lucide-react";
 import { Button, Card, CardContent, Eyebrow, Field, IconChip, Select } from "@/components/ui";
+import { StoreMultiSelect } from "./StoreMultiSelect";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { isRestCode, codeLabel } from "@/lib/shift-catalog";
 import { sundayCompensationAlerts, totalBreakHours } from "@/lib/shift-rules";
@@ -22,18 +23,34 @@ export function ReportsPanel() {
   const month = useFleetStore((s) => s.month);
 
   const [zoneId, setZoneId] = useState<string>(""); // "" = todas
+  const [posIds, setPosIds] = useState<string[]>([]); // vacío = todas las tiendas
   const [done, setDone] = useState<string | null>(null);
 
   const zoneName = useMemo(() => new Map(zones.map((z) => [z.id, z.name])), [zones]);
   const posName = useMemo(() => new Map(pointsOfSale.map((p) => [p.id, p.name])), [pointsOfSale]);
 
-  // Repartidores y turnos según el filtro de zona.
+  // Tiendas disponibles para el filtro (de la zona elegida, o todas).
+  const storeOptions = useMemo(
+    () =>
+      (zoneId ? pointsOfSale.filter((p) => p.zoneId === zoneId) : pointsOfSale)
+        .map((p) => ({ id: p.id, name: p.name }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [pointsOfSale, zoneId],
+  );
+
+  // Repartidores y turnos según los filtros (zona + tiendas), ordenados por tienda.
   const scope = useMemo(() => {
-    const ds = zoneId ? drivers.filter((d) => d.zoneId === zoneId) : drivers;
+    let ds = zoneId ? drivers.filter((d) => d.zoneId === zoneId) : drivers;
+    if (posIds.length) ds = ds.filter((d) => posIds.includes(d.basePointOfSaleId));
+    ds = [...ds].sort(
+      (a, b) =>
+        (posName.get(a.basePointOfSaleId) ?? "").localeCompare(posName.get(b.basePointOfSaleId) ?? "") ||
+        a.name.localeCompare(b.name),
+    );
     const ids = new Set(ds.map((d) => d.id));
     const ss = shifts.filter((s) => ids.has(s.driverId));
     return { drivers: ds, shifts: ss };
-  }, [drivers, shifts, zoneId]);
+  }, [drivers, shifts, zoneId, posIds, posName]);
 
   const suffix = `${month.label.replace(/\s+/g, "-")}${zoneId ? `_${(zoneName.get(zoneId) ?? "zona").replace(/\s+/g, "-")}` : ""}`;
 
@@ -48,8 +65,9 @@ export function ReportsPanel() {
       ["Cédula", "Repartidor", "Zona", "Punto de venta", "Fecha", "Día", "Código", "Concepto", "Horas"],
     ];
     const byId = new Map(scope.drivers.map((d) => [d.id, d]));
+    const order = new Map(scope.drivers.map((d, i) => [d.id, i]));
     const ordered = [...scope.shifts].sort(
-      (a, b) => a.driverId.localeCompare(b.driverId) || a.date.localeCompare(b.date),
+      (a, b) => (order.get(a.driverId) ?? 0) - (order.get(b.driverId) ?? 0) || a.date.localeCompare(b.date),
     );
     for (const s of ordered) {
       const d = byId.get(s.driverId);
@@ -129,17 +147,32 @@ export function ReportsPanel() {
           <span className="font-medium text-slate-700">{month.label}</span>.
         </p>
 
-        <div className="mb-4 max-w-xs">
-          <Field label="Zona" hint="Filtra los reportes por zona o expórtalos completos.">
-            <Select value={zoneId} onChange={(e) => setZoneId(e.target.value)}>
-              <option value="">Todas las zonas</option>
-              {zones.map((z) => (
-                <option key={z.id} value={z.id}>{z.name}</option>
-              ))}
-            </Select>
-          </Field>
+        <div className="mb-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <Field label="Zona" hint="Filtra por zona o exporta todo.">
+              <Select
+                value={zoneId}
+                onChange={(e) => { setZoneId(e.target.value); setPosIds([]); }}
+                className="w-56"
+              >
+                <option value="">Todas las zonas</option>
+                {zones.map((z) => (
+                  <option key={z.id} value={z.id}>{z.name}</option>
+                ))}
+              </Select>
+            </Field>
+            <div>
+              <span className="mb-1 block text-sm font-medium text-slate-700">Tiendas</span>
+              <StoreMultiSelect
+                options={storeOptions}
+                selected={posIds}
+                onChange={setPosIds}
+              />
+            </div>
+          </div>
           <p className="mt-2 text-xs text-slate-400">
             {scope.drivers.length} repartidor(es) · {scope.shifts.length} turnos en el alcance actual.
+            Los reportes salen ordenados por tienda.
           </p>
         </div>
 

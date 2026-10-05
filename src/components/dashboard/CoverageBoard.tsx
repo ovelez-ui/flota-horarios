@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarRange, AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { ShiftKind } from "@/types";
 import { Card, CardContent, Eyebrow, IconChip, Select } from "@/components/ui";
+import { StoreMultiSelect } from "./StoreMultiSelect";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { shiftKind, isRestCode } from "@/lib/shift-catalog";
 import { datesOfMonth, shortLabel, weekdayName } from "@/lib/date-utils";
@@ -27,6 +28,7 @@ export function CoverageBoard() {
   const dates = useMemo(() => datesOfMonth(month.year, month.monthIndex), [month]);
   const [date, setDate] = useState(dates[0]!);
   const [zoneId, setZoneId] = useState(zones[0]?.id ?? "");
+  const [posIds, setPosIds] = useState<string[]>([]); // vacío = todas las tiendas
 
   // Reencuadra el día seleccionado al cambiar de mes.
   useEffect(() => {
@@ -35,9 +37,10 @@ export function CoverageBoard() {
   }, [dates]);
 
   const driverIds = useMemo(() => new Set(drivers.map((d) => d.id)), [drivers]);
+  const zonePos = useMemo(() => pointsOfSale.filter((p) => p.zoneId === zoneId), [pointsOfSale, zoneId]);
   const visiblePos = useMemo(
-    () => pointsOfSale.filter((p) => p.zoneId === zoneId),
-    [pointsOfSale, zoneId],
+    () => (posIds.length ? zonePos.filter((p) => posIds.includes(p.id)) : zonePos),
+    [zonePos, posIds],
   );
 
   // posId -> kind -> nº de repartidores.
@@ -63,13 +66,18 @@ export function CoverageBoard() {
             <IconChip icon={<CalendarRange size={16} />} /> Cobertura por día
           </h2>
           <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-            <Select value={zoneId} onChange={(e) => setZoneId(e.target.value)} className="h-9 w-auto">
+            <Select value={zoneId} onChange={(e) => { setZoneId(e.target.value); setPosIds([]); }} className="h-9 w-auto">
               {zones.map((z) => (
                 <option key={z.id} value={z.id}>
                   {z.name}
                 </option>
               ))}
             </Select>
+            <StoreMultiSelect
+              options={zonePos.map((p) => ({ id: p.id, name: p.name }))}
+              selected={posIds}
+              onChange={setPosIds}
+            />
             <Select value={date} onChange={(e) => setDate(e.target.value)} className="h-9 w-auto">
               {dates.map((d) => (
                 <option key={d} value={d}>
