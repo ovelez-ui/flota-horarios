@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import {
   LayoutGrid, CalendarRange, CalendarDays, Wand2, Plane, BarChart3,
-  SlidersHorizontal, Clock, Download, Eye, LayoutDashboard,
+  SlidersHorizontal, Clock, Download, Eye, LayoutDashboard, Radio,
 } from "lucide-react";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { ReadOnlyBanner, IconChip, Eyebrow } from "@/components/ui";
@@ -18,15 +18,20 @@ import { VacationPanel } from "./VacationPanel";
 import { RulesAdmin } from "./RulesAdmin";
 import { ShiftTypesAdmin } from "./ShiftTypesAdmin";
 import { ReportsPanel } from "./ReportsPanel";
+import { ControlTower } from "./ControlTower";
 
 type TabId =
-  | "entidades" | "analitica" | "cobertura" | "calendario"
+  | "torre" | "entidades" | "analitica" | "cobertura" | "calendario"
   | "asignar" | "vacaciones" | "horarios" | "reglas" | "reportes";
 
 type NavItem = { id: TabId; label: string; icon: typeof LayoutGrid };
 
 // Secciones agrupadas para una navegación más clara y ordenada.
 const GROUPS: { label: string; items: NavItem[] }[] = [
+  {
+    label: "Operación",
+    items: [{ id: "torre", label: "Torre de Control", icon: Radio }],
+  },
   {
     label: "General",
     items: [
@@ -104,7 +109,7 @@ function NavButton({
  * (calendario en consulta; formularios y reglas bloqueados, sin guardar).
  */
 export function DashboardTabs({ readOnly = false }: { readOnly?: boolean }) {
-  const [tab, setTab] = useState<TabId>("entidades");
+  const [tab, setTab] = useState<TabId>("torre");
   const month = useFleetStore((s) => s.month);
 
   return (
@@ -161,6 +166,7 @@ export function DashboardTabs({ readOnly = false }: { readOnly?: boolean }) {
         </aside>
 
         <div key={tab} className="min-w-0 flex-1 animate-fade-in">
+          {tab === "torre" && <ControlTower />}
           {tab === "entidades" && <EntitiesOverview />}
           {tab === "analitica" && <Analytics />}
           {tab === "cobertura" && <CoverageBoard />}
