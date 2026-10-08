@@ -1,5 +1,5 @@
 import type { Shift, ShiftKind } from "@/types";
-import { shiftKind, isRestCode, specialMeta } from "@/lib/shift-catalog";
+import { shiftKind, isRestCode, specialMeta, parseShiftCode } from "@/lib/shift-catalog";
 import { parseISO, isWeekend } from "@/lib/date-utils";
 import { isHoliday, holidayName } from "@/lib/holidays";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,24 @@ const WEEK_HEADER = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 /** Offset lunes-primero: Lun=0 … Dom=6. */
 function mondayIndex(iso: string): number {
   return (parseISO(iso).getDay() + 6) % 7;
+}
+
+/** Formatea una hora decimal (ej. 13.666) a "HH:MM" en reloj de 24 h. */
+function fmtHour(h: number): string {
+  const hh = Math.floor(((h % 24) + 24) % 24);
+  const mm = Math.round((h - Math.floor(h)) * 60);
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
+/** Rango horario completo del turno (ej. "14:00–21:00"), o null si es novedad. */
+function timeRange(code: string): string | null {
+  try {
+    const d = parseShiftCode(code);
+    if (d.start == null || d.end == null) return null;
+    return `${fmtHour(d.start)} – ${fmtHour(d.end)}`;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -44,18 +62,19 @@ export function ShiftCalendar({ shifts }: { shifts: Shift[] }) {
       </div>
       <div className="grid grid-cols-7 gap-1.5">
         {cells.map((s, i) => {
-          if (!s) return <div key={`e${i}`} className="min-h-[72px] rounded-lg border border-dashed border-slate-100 bg-slate-50/40" />;
+          if (!s) return <div key={`e${i}`} className="min-h-[84px] rounded-lg border border-dashed border-slate-100 bg-slate-50/40" />;
           const rest = isRestCode(s.code);
           const special = specialMeta(s.code);
           const kind = shiftKind(s);
           const weekend = isWeekend(s.date);
           const holiday = isHoliday(s.date);
           const day = parseISO(s.date).getDate();
+          const range = timeRange(s.code);
           return (
             <div
               key={s.id}
               className={cn(
-                "flex min-h-[72px] flex-col gap-1 rounded-lg border p-1.5 transition-colors",
+                "flex min-h-[84px] flex-col gap-1 rounded-lg border p-1.5 transition-colors",
                 holiday ? "border-amber-200 bg-amber-50/50" : weekend ? "border-brand-100 bg-brand-50/40" : "border-slate-200 bg-white",
               )}
             >
@@ -67,14 +86,14 @@ export function ShiftCalendar({ shifts }: { shifts: Shift[] }) {
               </div>
               <span
                 className={cn(
-                  "inline-flex items-center justify-center rounded-md px-1 py-1 text-center text-[11px] font-semibold leading-tight ring-1 ring-inset",
+                  "flex w-full flex-1 items-center justify-center break-words rounded-md px-1 py-1 text-center text-[11px] font-semibold leading-tight ring-1 ring-inset",
                   special ? special.cell : KIND_STYLES[kind],
                 )}
-                title={special ? special.label : `${s.code} · ${s.hours}h`}
+                title={special ? special.label : `${range ?? s.code} · ${s.hours} h`}
               >
-                {special ? special.abbr : s.code}
+                {special ? special.label : (range ?? s.code)}
               </span>
-              <span className="mt-auto text-right text-[10px] tabular-nums text-slate-400">
+              <span className="text-right text-[10px] tabular-nums text-slate-400">
                 {rest ? "—" : `${s.hours} h`}
               </span>
             </div>
