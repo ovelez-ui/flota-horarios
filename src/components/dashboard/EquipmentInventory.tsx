@@ -4,11 +4,11 @@ import { useState } from "react";
 import { Smartphone, ExternalLink, RefreshCw } from "lucide-react";
 import { Button, Card, Eyebrow, IconChip } from "@/components/ui";
 
-// Hoja de inventario de equipos (Google Sheets). Debe estar "Publicada en la web"
-// para poder incrustarse; si no, Google bloquea el iframe.
+// Inventario de equipos (Google Sheets publicado en la web).
 const SHEET_ID = "1w-Ys6tEvV7D26LJHKs0t3OExbKWllBZubvMLnzt8-1g";
-const GID = "458653120";
-const EMBED_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pubhtml?gid=${GID}&single=true&widget=true&headers=false`;
+// URL de publicación (Archivo → Publicar en la Web → pestaña Insertar).
+const EMBED_URL =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vRt27LVxf15HEZfKdgIK5cRPthIfiHdE7omo26FVaZeKQr36K5lHgTUtICtYTNh4QxI2sa0kB-BooyB/pubhtml?widget=true&headers=false";
 const OPEN_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
 
 /** Módulo Inventario de Equipos: muestra la hoja de Google en vivo. */
