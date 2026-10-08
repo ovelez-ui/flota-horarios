@@ -12,9 +12,9 @@ body {
   @apply text-slate-800 antialiased;
   /* Fondo con un degradado muy sutil hacia el azul de marca. */
   background:
-    radial-gradient(1200px 600px at 100% -10%, rgba(8, 72, 120, 0.07), transparent 60%),
-    radial-gradient(900px 500px at -10% 0%, rgba(11, 122, 133, 0.06), transparent 55%),
-    #f5f7fb;
+    radial-gradient(1200px 600px at 100% -10%, rgba(0, 59, 113, 0.08), transparent 60%),
+    radial-gradient(900px 500px at -10% 0%, rgba(1, 26, 75, 0.05), transparent 55%),
+    #eef1f7;
   background-attachment: fixed;
   letter-spacing: -0.011em;
 }
@@ -112,19 +112,19 @@ textarea,
   color: #e2e8f0;
   /* Fondo inmersivo (estilo iData): navy profundo con glows suaves de marca. */
   background:
-    radial-gradient(1100px 560px at 100% -8%, rgba(37, 107, 173, 0.2), transparent 58%),
-    radial-gradient(900px 520px at -8% 3%, rgba(11, 122, 133, 0.13), transparent 55%),
-    radial-gradient(760px 520px at 50% 110%, rgba(37, 107, 173, 0.1), transparent 60%),
-    #08111f;
+    radial-gradient(1100px 560px at 100% -8%, rgba(0, 59, 113, 0.42), transparent 58%),
+    radial-gradient(900px 520px at -8% 3%, rgba(1, 26, 75, 0.5), transparent 55%),
+    radial-gradient(760px 520px at 50% 112%, rgba(0, 59, 113, 0.22), transparent 60%),
+    #010f2e;
   background-attachment: fixed;
 }
 
 .dark .glass {
-  background-color: rgb(12 21 37 / 0.72);
+  background-color: rgb(6 28 66 / 0.72);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .dark .glass {
-    background-color: #0d1626;
+    background-color: #061c42;
   }
 }
 
@@ -164,11 +164,11 @@ textarea,
 .dark .ring-slate-900\/\[0\.03\] { --tw-ring-color: rgb(255 255 255 / 0.04); }
 
 /* Acentos de marca sobre fondo oscuro */
-.dark .bg-brand-50 { background-color: rgba(37, 107, 173, 0.16); }
-.dark .text-brand-700 { color: #7fb0de; }
-.dark .text-brand-800 { color: #9cc3e6; }
-.dark .ring-brand-100 { --tw-ring-color: rgba(37, 107, 173, 0.35); }
-.dark .border-brand-100 { border-color: rgba(37, 107, 173, 0.35); }
+.dark .bg-brand-50 { background-color: rgba(0, 59, 113, 0.24); }
+.dark .text-brand-700 { color: #99b1c6; }
+.dark .text-brand-800 { color: #ccd8e3; }
+.dark .ring-brand-100 { --tw-ring-color: rgba(0, 59, 113, 0.40); }
+.dark .border-brand-100 { border-color: rgba(0, 59, 113, 0.40); }
 
 /* Tintes de color (celdas de la malla, insignias, leyenda, cobertura) en oscuro:
    versiones apagadas y translúcidas con texto claro, para cohesión con el tema. */

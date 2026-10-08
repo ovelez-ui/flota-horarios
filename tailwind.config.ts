@@ -6,25 +6,26 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Identidad Pasteur — azul marino con escala completa.
+        // Identidad oficial Pasteur (Manual de Marca 2025): azul corporativo
+        // #003b71 y deep navy #011a4b, con escala derivada.
         brand: {
-          DEFAULT: "#084878",
-          50: "#eff6fc",
-          100: "#d8e8f6",
-          200: "#b3d0ec",
-          300: "#7fb0de",
-          400: "#4b8bcb",
-          500: "#246bad",
-          600: "#0f5590",
-          700: "#084878",
-          800: "#0a3a5e",
-          900: "#082e4b",
-          950: "#051d31",
+          DEFAULT: "#003b71",
+          50: "#eef3f8",
+          100: "#d8e3ee",
+          200: "#b6ccdf",
+          300: "#86a7cb",
+          400: "#4e7fae",
+          500: "#1f5e9a",
+          600: "#0a4f88",
+          700: "#003b71",
+          800: "#012a56",
+          900: "#011a4b",
+          950: "#010d26",
         },
         accent: {
-          DEFAULT: "#e2231a", // rojo Pasteur
-          soft: "#fdecea",
-          600: "#c81810",
+          DEFAULT: "#e1251b", // rojo Pasteur (bright red)
+          soft: "#f9d3d1",
+          600: "#ad0f0a", // dark red
         },
       },
       fontFamily: {
@@ -33,8 +34,8 @@ const config: Config = {
       boxShadow: {
         card: "0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06)",
         soft: "0 2px 8px -2px rgb(15 23 42 / 0.08), 0 4px 16px -4px rgb(15 23 42 / 0.06)",
-        pop: "0 8px 24px -6px rgb(8 72 120 / 0.18)",
-        glow: "0 4px 14px -4px rgb(8 72 120 / 0.35), inset 0 1px 0 0 rgb(255 255 255 / 0.25)",
+        pop: "0 8px 24px -6px rgb(0 59 113 / 0.20)",
+        glow: "0 4px 14px -4px rgb(0 59 113 / 0.38), inset 0 1px 0 0 rgb(255 255 255 / 0.25)",
       },
     },
   },
