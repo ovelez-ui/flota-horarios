@@ -1,13 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, CreditCard, AlertCircle } from "lucide-react";
+import { Search, CreditCard, AlertCircle, CalendarDays, List } from "lucide-react";
 import type { DriverMonthlySummary } from "@/types";
 import { Button, Card, CardContent, Eyebrow, Input } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { totalHours, workedDays, restDays, totalBreakHours } from "@/lib/shift-rules";
+import { cn } from "@/lib/utils";
 import { DriverInfoCard } from "./DriverInfoCard";
 import { ShiftTable } from "./ShiftTable";
+import { ShiftCalendar } from "./ShiftCalendar";
 
 export function DriverConsole() {
   const drivers = useFleetStore((s) => s.drivers);
@@ -17,6 +19,7 @@ export function DriverConsole() {
 
   const [cedula, setCedula] = useState("");
   const [query, setQuery] = useState<string | null>(null);
+  const [view, setView] = useState<"calendario" | "lista">("calendario");
 
   const summary = useMemo<DriverMonthlySummary | null>(() => {
     if (!query) return null;
@@ -41,7 +44,7 @@ export function DriverConsole() {
   const notFound = query !== null && summary === null;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       <div>
         <Eyebrow>Vista repartidor</Eyebrow>
         <h1 className="mt-1.5 text-2xl font-light tracking-tight text-slate-900 sm:text-3xl">Consulta de turnos</h1>
@@ -108,18 +111,41 @@ export function DriverConsole() {
           <DriverInfoCard summary={summary} />
           <Card>
             <CardContent className="pt-5">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="font-semibold text-slate-900">Turnos del mes</h2>
-                <div className="flex gap-2 text-xs">
-                  <span className="rounded-md bg-emerald-50 px-2 py-1 text-emerald-700">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <h2 className="font-semibold text-slate-900">Malla del mes</h2>
+                  <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs text-emerald-700">
                     {summary.workedDays} laborados
                   </span>
-                  <span className="rounded-md bg-slate-100 px-2 py-1 text-slate-500">
+                  <span className="rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-500">
                     {summary.restDays} descansos
                   </span>
                 </div>
+                {/* Toggle Calendario / Lista */}
+                <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
+                  {([
+                    { id: "calendario", label: "Calendario", icon: CalendarDays },
+                    { id: "lista", label: "Lista", icon: List },
+                  ] as const).map((v) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setView(v.id)}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                        view === v.id ? "bg-white text-brand-700 shadow-sm" : "text-slate-500 hover:text-slate-700",
+                      )}
+                    >
+                      <v.icon size={15} /> {v.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <ShiftTable shifts={summary.shifts} />
+              {view === "calendario" ? (
+                <ShiftCalendar shifts={summary.shifts} />
+              ) : (
+                <ShiftTable shifts={summary.shifts} />
+              )}
             </CardContent>
           </Card>
         </div>
