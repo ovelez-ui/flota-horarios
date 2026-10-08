@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import {
   LayoutGrid, CalendarRange, CalendarDays, Wand2, Plane, BarChart3,
-  SlidersHorizontal, Clock, Download, Eye, LayoutDashboard, Radio, Smartphone,
+  SlidersHorizontal, Clock, Download, Eye, LayoutDashboard, Radio, Smartphone, Table2,
 } from "lucide-react";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { ReadOnlyBanner, IconChip, Eyebrow } from "@/components/ui";
@@ -21,9 +21,10 @@ import { ShiftTypesAdmin } from "./ShiftTypesAdmin";
 import { ReportsPanel } from "./ReportsPanel";
 import { ControlTower } from "./ControlTower";
 import { EquipmentInventory } from "./EquipmentInventory";
+import { DriversSheet } from "./DriversSheet";
 
 type TabId =
-  | "torre" | "inventario" | "entidades" | "analitica" | "cobertura" | "calendario"
+  | "torre" | "inventario" | "entidades" | "repartidores" | "analitica" | "cobertura" | "calendario"
   | "asignar" | "vacaciones" | "horarios" | "reglas" | "reportes";
 
 type NavItem = { id: TabId; label: string; icon: typeof LayoutGrid };
@@ -41,6 +42,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
     label: "General",
     items: [
       { id: "entidades", label: "Entidades", icon: LayoutGrid },
+      { id: "repartidores", label: "Repartidores", icon: Table2 },
       { id: "analitica", label: "Analítica", icon: BarChart3 },
       { id: "cobertura", label: "Cobertura", icon: CalendarRange },
     ],
@@ -175,6 +177,7 @@ export function DashboardTabs({ readOnly = false }: { readOnly?: boolean }) {
             {tab === "torre" && <ControlTower />}
             {tab === "inventario" && <EquipmentInventory />}
             {tab === "entidades" && <EntitiesOverview />}
+            {tab === "repartidores" && <DriversSheet />}
             {tab === "analitica" && <Analytics />}
             {tab === "cobertura" && <CoverageBoard />}
             {tab === "calendario" && <ScheduleCalendar readOnly={readOnly} />}
