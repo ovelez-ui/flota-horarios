@@ -110,7 +110,7 @@ function NavButton({
  * (calendario en consulta; formularios y reglas bloqueados, sin guardar).
  */
 export function DashboardTabs({ readOnly = false }: { readOnly?: boolean }) {
-  const [tab, setTab] = useState<TabId>("entidades");
+  const [tab, setTab] = useState<TabId>("torre");
   const month = useFleetStore((s) => s.month);
 
   return (
