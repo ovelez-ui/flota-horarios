@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { ReadOnlyBanner, IconChip, Eyebrow } from "@/components/ui";
+import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
 import { MonthSwitcher } from "./MonthSwitcher";
 import { cn } from "@/lib/utils";
 import { EntitiesOverview } from "./EntitiesOverview";
@@ -109,7 +110,7 @@ function NavButton({
  * (calendario en consulta; formularios y reglas bloqueados, sin guardar).
  */
 export function DashboardTabs({ readOnly = false }: { readOnly?: boolean }) {
-  const [tab, setTab] = useState<TabId>("torre");
+  const [tab, setTab] = useState<TabId>("entidades");
   const month = useFleetStore((s) => s.month);
 
   return (
@@ -166,16 +167,18 @@ export function DashboardTabs({ readOnly = false }: { readOnly?: boolean }) {
         </aside>
 
         <div key={tab} className="min-w-0 flex-1 animate-fade-in">
-          {tab === "torre" && <ControlTower />}
-          {tab === "entidades" && <EntitiesOverview />}
-          {tab === "analitica" && <Analytics />}
-          {tab === "cobertura" && <CoverageBoard />}
-          {tab === "calendario" && <ScheduleCalendar readOnly={readOnly} />}
-          {tab === "asignar" && <Section readOnly={readOnly}><AssignmentPanel /></Section>}
-          {tab === "vacaciones" && <Section readOnly={readOnly}><VacationPanel /></Section>}
-          {tab === "horarios" && <Section readOnly={readOnly}><ShiftTypesAdmin /></Section>}
-          {tab === "reglas" && <Section readOnly={readOnly}><RulesAdmin /></Section>}
-          {tab === "reportes" && <ReportsPanel />}
+          <PanelErrorBoundary>
+            {tab === "torre" && <ControlTower />}
+            {tab === "entidades" && <EntitiesOverview />}
+            {tab === "analitica" && <Analytics />}
+            {tab === "cobertura" && <CoverageBoard />}
+            {tab === "calendario" && <ScheduleCalendar readOnly={readOnly} />}
+            {tab === "asignar" && <Section readOnly={readOnly}><AssignmentPanel /></Section>}
+            {tab === "vacaciones" && <Section readOnly={readOnly}><VacationPanel /></Section>}
+            {tab === "horarios" && <Section readOnly={readOnly}><ShiftTypesAdmin /></Section>}
+            {tab === "reglas" && <Section readOnly={readOnly}><RulesAdmin /></Section>}
+            {tab === "reportes" && <ReportsPanel />}
+          </PanelErrorBoundary>
         </div>
       </div>
     </div>
