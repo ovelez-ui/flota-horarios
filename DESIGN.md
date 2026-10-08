@@ -1,8 +1,9 @@
 # Sistema de diseño · Flota Horarios
 
-Guía para mantener la coherencia visual de la plataforma. El lenguaje visual está
-inspirado en referentes modernos de Data/AI (tipo iData), conservando la
-**identidad Pasteur** (azul marino de marca) y soportando **modo claro y oscuro**.
+Guía para mantener la coherencia visual de la plataforma. Aplica la **identidad
+oficial Pasteur** (Manual de Marca 2025: tipografía Lato, azul corporativo y rojo),
+con una disposición moderna inspirada en referentes Data/AI (tipo iData), y
+soporta **modo claro y oscuro**.
 
 > Regla de oro: reutiliza los componentes y tokens de este documento. No introduzcas
 > colores/estilos "sueltos"; si falta algo, agrégalo al kit (`src/components/ui/index.tsx`)
@@ -12,20 +13,27 @@ inspirado en referentes modernos de Data/AI (tipo iData), conservando la
 
 ## 1. Tokens
 
-### Tipografía
-- **Fuente:** `Manrope` (fallback `Poppins`, luego system). Importada en `src/app/globals.css`.
-- Config: `tailwind.config.ts → theme.extend.fontFamily.sans`.
+### Tipografía — **Lato** (fuente oficial Pasteur)
+- **Fuente:** `Lato` (fallback `Arial`, `Helvetica`, system). Importada en `src/app/globals.css`; config en `tailwind.config.ts → theme.extend.fontFamily.sans`.
+- Pesos cargados: **300, 400, 700, 900** (Lato no tiene 500/600/800; Tailwind `font-medium/semibold` caen al más cercano).
 - **Jerarquía:**
   - **Títulos de página (H1):** grandes y de **peso ligero** → `text-2xl/3xl` (o `4xl/5xl` en el hero) + `font-light` + `tracking-tight`.
   - **Títulos de sección (H2):** `font-semibold text-slate-900`.
   - **Cuerpo:** `text-slate-600` / `text-slate-500`.
   - Números destacados (KPIs): `text-3xl font-light tracking-tight`.
 
-### Color (marca Pasteur)
-Definido en `tailwind.config.ts`:
-- `brand` (escala 50–950). Base `brand.700 = #084878`. Acentos claros para oscuro: `brand.300 #7fb0de`.
-- `accent` (rojo Pasteur) `#e2231a`, `accent.soft #fdecea`, `accent.600 #c81810`.
-- Grises: escala `slate` de Tailwind (texto/estructura).
+### Color — paleta oficial Pasteur (Manual 2025)
+Definido en `tailwind.config.ts` (escala `brand` 50–950):
+- **Azul corporativo** `brand.700 = #003b71` (base, títulos, botones, estado activo).
+- **Deep navy** `brand.900 = #011a4b` · `brand.950 = #010d26` (fondos oscuros, énfasis).
+- Tintes claros `brand.50–300` (chips, anillos; en oscuro los eyebrows usan `brand.300`).
+- **Rojo** (`accent`): `#e1251b` (bright red, CTAs/alertas) · `accent.soft #f9d3d1` · `accent.600 #ad0f0a` (dark red).
+- Grises de marca / estructura: escala `slate` de Tailwind (texto `slate-900/600/500`, bordes).
+
+### Logo
+- `public/pasteur-logo.png` (la "P" roja oficial) en el **encabezado** y el **login** (tile blanco para que lea en cualquier fondo).
+- Se sirve con el `basePath` de Pages: `src={`${NEXT_PUBLIC_BASE_PATH || ""}/pasteur-logo.png`}`.
+- Variante blanca disponible: `public/pasteur-logo-blanco.png`. No distorsionar ni recolorear el logo.
 
 ### Sombras (`boxShadow`)
 - `shadow-card` — elevación base de tarjetas.
@@ -46,8 +54,9 @@ Definido en `tailwind.config.ts`:
 - **Interruptor:** `src/components/ThemeToggle.tsx` (sol/luna). Persiste en `localStorage` (`flota-theme`) y respeta `prefers-color-scheme`.
 - **Sin parpadeo:** un script inline en `src/app/layout.tsx` (`THEME_INIT`) aplica la clase antes de pintar. `<html>` lleva `suppressHydrationWarning`.
 - **Oscuro centralizado:** en `globals.css`, bajo `.dark`, se **reasignan las utilidades de color más usadas** (superficies `bg-white/bg-slate-*`, texto `text-slate-*`, bordes, `glass`, hovers, scrollbars). Así casi toda la app se tematiza sin tocar cada componente.
-  - Fondo oscuro inmersivo: navy `#08111f` + glows de marca.
-  - Superficie glass oscura: `rgb(12 21 37 / .72)`.
+  - Fondo oscuro inmersivo: **deep navy `#010f2e`** + glows en azul corporativo.
+  - Superficie glass oscura: **navy `rgb(6 28 66 / .72)`**.
+  - Acentos de marca en oscuro: `text-brand-700 → #99b1c6`, `text-brand-800 → #ccd8e3` (azules claros oficiales).
 - **Al agregar un color nuevo** poco común, revisa si necesita su reasignación en el bloque `.dark` de `globals.css`. Los acentos de color (emerald/violet/amber…) se dejan tal cual a propósito.
 
 ---
