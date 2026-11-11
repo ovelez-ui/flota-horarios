@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full font-sans">
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         <header className="glass sticky top-0 z-20 border-b border-white/60 shadow-[0_1px_3px_rgb(15_23_42/0.04)]">
-          <div className="mx-auto flex h-14 max-w-[1760px] items-center justify-between px-4">
+          <div className="mx-auto flex h-14 max-w-[1920px] items-center justify-between px-4 2xl:px-6">
             <Link href="/" className="group flex shrink-0 items-center gap-2.5 whitespace-nowrap">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -46,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </header>
-        <main className="mx-auto max-w-[1760px] px-4 py-6">
+        <main className="mx-auto max-w-[1920px] px-4 py-6 2xl:px-6">
           <AuthGate>
             <FleetGate>{children}</FleetGate>
           </AuthGate>

@@ -45,8 +45,10 @@ function cellLabel(shift: Shift): string {
   return shift.code; // ej. "08-15" (hora inicio - hora fin)
 }
 
-// Ancho mínimo de columna: suficiente para "08-15" (compacto para que quepa el mes).
-const COL_MIN = 40;
+// Ancho mínimo de columna de día: suficiente para "08-15" (compacto para que quepa el mes).
+const COL_MIN = 34;
+// Ancho fijo de la primera columna (nombre del repartidor).
+const NAME_COL = 180;
 
 interface EditState {
   driver: Driver;
@@ -562,7 +564,16 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
         </div>
 
         <div className="overflow-auto rounded-lg border border-slate-200">
-          <table className="border-collapse text-xs">
+          <table
+            className="w-full table-fixed border-collapse text-xs"
+            style={{ minWidth: NAME_COL + visibleDates.length * COL_MIN }}
+          >
+            <colgroup>
+              <col style={{ width: NAME_COL }} />
+              {visibleDates.map((d) => (
+                <col key={d} />
+              ))}
+            </colgroup>
             <thead>
               <tr>
                 <th className="sticky left-0 z-20 border-b border-r border-slate-200 bg-slate-50 px-2 py-2 text-left font-semibold text-slate-500 sm:px-3">
