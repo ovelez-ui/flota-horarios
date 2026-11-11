@@ -22,6 +22,16 @@ const config: Config = {
           900: "#011a4b",
           950: "#010d26",
         },
+        // Tokens del rediseño (cambian con el tema; ver globals.css).
+        paper: "var(--paper)",
+        surface: "var(--surface)",
+        ink: "var(--ink)",
+        muted: "var(--muted)",
+        line: "var(--line)",
+        "line-soft": "var(--line-soft)",
+        data: "var(--data)",
+        signal: "var(--signal)",
+        action: "var(--action)",
         accent: {
           DEFAULT: "#e1251b", // rojo Pasteur (bright red)
           soft: "#f9d3d1",
@@ -30,6 +40,8 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["Lato", "Arial", "Helvetica", "ui-sans-serif", "system-ui", "sans-serif"],
+        serif: ["Fraunces", "Iowan Old Style", "Georgia", "serif"],
+        mono: ["Roboto Mono", "ui-monospace", "SFMono-Regular", "Consolas", "monospace"],
       },
       boxShadow: {
         card: "0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06)",

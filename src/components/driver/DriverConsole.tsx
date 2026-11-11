@@ -47,7 +47,7 @@ export function DriverConsole() {
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
         <Eyebrow>Vista repartidor</Eyebrow>
-        <h1 className="mt-1.5 text-2xl font-light tracking-tight text-slate-900 sm:text-3xl">Consulta de turnos</h1>
+        <h1 className="mt-1.5 text-2xl font-serif font-normal tracking-tight text-ink sm:text-3xl">Consulta de turnos</h1>
         <p className="mt-1 text-sm text-slate-600">
           Ingresa tu cédula para ver tu malla del mes.
         </p>
@@ -113,7 +113,7 @@ export function DriverConsole() {
             <CardContent className="pt-5">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <h2 className="font-semibold text-slate-900">Malla del mes</h2>
+                  <h2 className="text-xl font-serif font-normal tracking-tight text-ink">Malla del mes</h2>
                   <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs text-emerald-700">
                     {summary.workedDays} laborados
                   </span>

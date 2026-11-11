@@ -1,15 +1,11 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import {
-  LayoutGrid, CalendarRange, CalendarDays, Wand2, Plane, BarChart3,
-  SlidersHorizontal, Clock, Download, Eye, LayoutDashboard, Radio, Smartphone, Table2,
-} from "lucide-react";
-import { useFleetStore } from "@/hooks/use-shift-assignment";
-import { ReadOnlyBanner, IconChip, Eyebrow } from "@/components/ui";
+import { useEffect, useState, type ReactNode } from "react";
+import { Eye, Search } from "lucide-react";
+import { ReadOnlyBanner } from "@/components/ui";
 import { PanelErrorBoundary } from "@/components/PanelErrorBoundary";
 import { MonthSwitcher } from "./MonthSwitcher";
-import { cn } from "@/lib/utils";
+import { CommandPalette } from "./CommandPalette";
 import { EntitiesOverview } from "./EntitiesOverview";
 import { Analytics } from "./Analytics";
 import { CoverageBoard } from "./CoverageBoard";
@@ -27,48 +23,46 @@ type TabId =
   | "torre" | "inventario" | "entidades" | "repartidores" | "analitica" | "cobertura" | "calendario"
   | "asignar" | "vacaciones" | "horarios" | "reglas" | "reportes";
 
-type NavItem = { id: TabId; label: string; icon: typeof LayoutGrid };
+type NavItem = { id: TabId; label: string };
 
 // Secciones agrupadas para una navegación más clara y ordenada.
 const GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Operación",
     items: [
-      { id: "torre", label: "Torre de Control", icon: Radio },
-      { id: "inventario", label: "Inventario", icon: Smartphone },
+      { id: "torre", label: "Torre de Control" },
+      { id: "inventario", label: "Inventario" },
     ],
   },
   {
     label: "General",
     items: [
-      { id: "entidades", label: "Entidades", icon: LayoutGrid },
-      { id: "repartidores", label: "Repartidores", icon: Table2 },
-      { id: "analitica", label: "Analítica", icon: BarChart3 },
-      { id: "cobertura", label: "Cobertura", icon: CalendarRange },
+      { id: "entidades", label: "Entidades" },
+      { id: "repartidores", label: "Repartidores" },
+      { id: "analitica", label: "Analítica" },
+      { id: "cobertura", label: "Cobertura" },
     ],
   },
   {
     label: "Planificación",
     items: [
-      { id: "calendario", label: "Calendario", icon: CalendarDays },
-      { id: "asignar", label: "Asignación", icon: Wand2 },
-      { id: "vacaciones", label: "Vacaciones", icon: Plane },
+      { id: "calendario", label: "Calendario" },
+      { id: "asignar", label: "Asignación" },
+      { id: "vacaciones", label: "Vacaciones" },
     ],
   },
   {
     label: "Configuración",
     items: [
-      { id: "horarios", label: "Horarios", icon: Clock },
-      { id: "reglas", label: "Reglas", icon: SlidersHorizontal },
+      { id: "horarios", label: "Horarios" },
+      { id: "reglas", label: "Reglas" },
     ],
   },
   {
     label: "Informes",
-    items: [{ id: "reportes", label: "Reportes", icon: Download }],
+    items: [{ id: "reportes", label: "Reportes" }],
   },
 ];
-
-const TABS: NavItem[] = GROUPS.flatMap((g) => g.items);
 
 /**
  * Envuelve una sección de edición. En solo lectura (supervisor) muestra el
@@ -86,108 +80,104 @@ function Section({ readOnly, children }: { readOnly: boolean; children: ReactNod
   );
 }
 
-/** Botón de navegación de sección. El estado activo destaca con degradado + glow. */
-function NavButton({
-  active, icon: Icon, label, onClick,
-}: { active: boolean; icon: typeof LayoutGrid; label: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "group flex items-center gap-2.5 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200",
-        active
-          ? "bg-gradient-to-r from-brand-600 to-brand-700 text-white shadow-pop"
-          : "text-slate-600 hover:bg-white hover:text-brand-700 hover:shadow-sm",
-      )}
-    >
-      <Icon
-        size={16}
-        className={cn("shrink-0 transition-colors", active ? "text-white" : "text-slate-400 group-hover:text-brand-600")}
-      />
-      {label}
-    </button>
-  );
-}
-
 /**
- * Panel dispatcher con navegación por secciones.
+ * Panel dispatcher: 5 grupos + secciones del grupo activo + paleta (Ctrl K).
  * `readOnly` (supervisores): muestra TODAS las secciones pero deshabilitadas
  * (calendario en consulta; formularios y reglas bloqueados, sin guardar).
  */
 export function DashboardTabs({ readOnly = false }: { readOnly?: boolean }) {
   const [tab, setTab] = useState<TabId>("torre");
-  const month = useFleetStore((s) => s.month);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const activeGroup = GROUPS.find((g) => g.items.some((t) => t.id === tab))!;
+
+  // Ctrl/⌘ K abre o cierra la paleta desde cualquier parte del panel.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((open) => !open);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   return (
-    <div className="space-y-6">
-      {/* Encabezado */}
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/70 pb-5">
+    <div>
+      <h1 className="sr-only">Panel de control{readOnly ? " (solo lectura)" : ""}</h1>
+
+      {/* Sub-barra: 5 grupos arriba; debajo, solo las secciones del grupo activo. */}
+      <div className="ed-subbar -mx-4 -mt-6 mb-6 px-4 2xl:-mx-6 2xl:px-6">
         <div className="flex items-center gap-3">
-          <IconChip icon={<LayoutDashboard size={18} />} className="h-11 w-11" />
-          <div>
-            <Eyebrow>{readOnly ? "Supervisión de flota" : "Gestión operativa"}</Eyebrow>
-            <h1 className="mt-1.5 flex flex-wrap items-center gap-2 text-2xl font-light tracking-tight text-slate-900 sm:text-3xl">
-              Panel de control
-              {readOnly && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-200">
-                  <Eye size={12} /> Solo lectura
-                </span>
-              )}
-            </h1>
-            <p className="mt-0.5 text-sm text-slate-500">
-              {readOnly ? "Visualización" : "Gestión"} de la flota de repartidores ·{" "}
-              <span className="font-semibold text-brand-700">{month.label}</span>
-            </p>
-          </div>
+          <nav className="flex min-w-0 flex-1 overflow-x-auto" aria-label="Grupos de secciones">
+            {GROUPS.map((g) => (
+              <button
+                key={g.label}
+                type="button"
+                className="ed-tab"
+                aria-current={g === activeGroup ? "true" : undefined}
+                onClick={() => setTab(g.items[0]!.id)}
+              >
+                {g.label}
+              </button>
+            ))}
+          </nav>
+          {/* Aquí la Torre de Control proyecta su cifra cuando el hero sale de pantalla. */}
+          <span id="dash-mini" className="hidden lg:block" />
+          {readOnly && (
+            <span className="ed-chip hidden sm:inline-flex">
+              <Eye size={12} className="mr-1" aria-hidden /> Solo lectura
+            </span>
+          )}
+          <button
+            type="button"
+            className="ed-tool"
+            onClick={() => setPaletteOpen(true)}
+            aria-haspopup="dialog"
+            aria-keyshortcuts="Control+K Meta+K"
+            aria-label="Ir a una sección"
+          >
+            <Search size={16} aria-hidden />
+            <span className="hidden sm:inline">Ir a…</span>
+            <kbd className="hidden lg:inline" aria-hidden>Ctrl K</kbd>
+          </button>
         </div>
-        <MonthSwitcher />
-      </header>
 
-      <div className="flex flex-col gap-6 lg:flex-row">
-        <aside className="lg:w-56 lg:shrink-0">
-          <div className="lg:sticky lg:top-20">
-            {/* Móvil: navegación plana con scroll horizontal */}
-            <nav className="flex gap-1 overflow-x-auto pb-1 lg:hidden">
-              {TABS.map((t) => (
-                <NavButton key={t.id} active={tab === t.id} icon={t.icon} label={t.label} onClick={() => setTab(t.id)} />
-              ))}
-            </nav>
-
-            {/* Escritorio: navegación agrupada, tipo tarjeta */}
-            <div className="glass hidden rounded-2xl border border-white/60 p-3 shadow-card ring-1 ring-slate-900/[0.03] lg:block">
-              {GROUPS.map((g) => (
-                <div key={g.label} className="mb-4 last:mb-0">
-                  <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                    {g.label}
-                  </p>
-                  <div className="flex flex-col gap-0.5">
-                    {g.items.map((t) => (
-                      <NavButton key={t.id} active={tab === t.id} icon={t.icon} label={t.label} onClick={() => setTab(t.id)} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
-
-        <div key={tab} className="min-w-0 flex-1 animate-fade-in">
-          <PanelErrorBoundary>
-            {tab === "torre" && <ControlTower />}
-            {tab === "inventario" && <EquipmentInventory />}
-            {tab === "entidades" && <EntitiesOverview />}
-            {tab === "repartidores" && <DriversSheet />}
-            {tab === "analitica" && <Analytics />}
-            {tab === "cobertura" && <CoverageBoard />}
-            {tab === "calendario" && <ScheduleCalendar readOnly={readOnly} />}
-            {tab === "asignar" && <Section readOnly={readOnly}><AssignmentPanel /></Section>}
-            {tab === "vacaciones" && <Section readOnly={readOnly}><VacationPanel /></Section>}
-            {tab === "horarios" && <Section readOnly={readOnly}><ShiftTypesAdmin /></Section>}
-            {tab === "reglas" && <Section readOnly={readOnly}><RulesAdmin /></Section>}
-            {tab === "reportes" && <ReportsPanel />}
-          </PanelErrorBoundary>
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-t border-line-soft py-1">
+          <nav className="flex min-w-0 gap-5 overflow-x-auto" aria-label={`Secciones de ${activeGroup.label}`}>
+            {activeGroup.items.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className="ed-subtab"
+                aria-current={t.id === tab ? "page" : undefined}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+          <MonthSwitcher />
         </div>
+      </div>
+
+      <CommandPalette groups={GROUPS} open={paletteOpen} onClose={() => setPaletteOpen(false)} onSelect={setTab} />
+
+      <div key={tab} className="min-w-0 animate-fade-in">
+        <PanelErrorBoundary>
+          {tab === "torre" && <ControlTower onOpenCalendar={() => setTab("calendario")} />}
+          {tab === "inventario" && <EquipmentInventory />}
+          {tab === "entidades" && <EntitiesOverview />}
+          {tab === "repartidores" && <DriversSheet />}
+          {tab === "analitica" && <Analytics />}
+          {tab === "cobertura" && <CoverageBoard />}
+          {tab === "calendario" && <ScheduleCalendar readOnly={readOnly} />}
+          {tab === "asignar" && <Section readOnly={readOnly}><AssignmentPanel /></Section>}
+          {tab === "vacaciones" && <Section readOnly={readOnly}><VacationPanel /></Section>}
+          {tab === "horarios" && <Section readOnly={readOnly}><ShiftTypesAdmin /></Section>}
+          {tab === "reglas" && <Section readOnly={readOnly}><RulesAdmin /></Section>}
+          {tab === "reportes" && <ReportsPanel />}
+        </PanelErrorBoundary>
       </div>
     </div>
   );

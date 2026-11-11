@@ -47,7 +47,7 @@ export function EntitiesOverview() {
 
       <div>
         <Eyebrow className="mb-2">Cobertura</Eyebrow>
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Zonas y puntos de venta</h2>
+        <h2 className="mb-3 text-lg font-serif font-normal tracking-tight text-ink">Zonas y puntos de venta</h2>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {zones.map((zone) => (
             <ZoneCard

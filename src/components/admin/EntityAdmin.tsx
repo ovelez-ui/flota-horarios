@@ -7,7 +7,6 @@ import { Button, Eyebrow } from "@/components/ui";
 import { ZonesAdmin } from "./ZonesAdmin";
 import { PointsAdmin } from "./PointsAdmin";
 import { DriversAdmin } from "./DriversAdmin";
-import { cn } from "@/lib/utils";
 
 type Tab = "zonas" | "puntos" | "repartidores";
 
@@ -27,7 +26,7 @@ export function EntityAdmin() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Eyebrow>Configuración</Eyebrow>
-          <h1 className="mt-1.5 text-2xl font-light tracking-tight text-slate-900 sm:text-3xl">Administración</h1>
+          <h1 className="mt-1.5 text-2xl font-serif font-normal tracking-tight text-ink sm:text-3xl">Administración</h1>
           <p className="mt-1 text-sm text-slate-600">
             Gestiona zonas, puntos de venta y repartidores. Los cambios se guardan en el servidor.
           </p>
@@ -37,19 +36,18 @@ export function EntityAdmin() {
         </Button>
       </div>
 
-      <div className="flex gap-1 border-b border-slate-200">
+      <div className="flex gap-6 overflow-x-auto border-b border-line" role="tablist" aria-label="Entidades">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            aria-current={tab === id ? "page" : undefined}
             onClick={() => setTab(id)}
-            className={cn(
-              "-mb-px flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium",
-              tab === id
-                ? "border-brand-700 text-brand-700"
-                : "border-transparent text-slate-500 hover:text-slate-700",
-            )}
+            className="ed-subtab inline-flex items-center gap-2"
           >
-            <Icon size={16} /> {label}
+            <Icon size={14} aria-hidden /> {label}
           </button>
         ))}
       </div>

@@ -49,7 +49,7 @@ export function ZonesAdmin() {
     <Card>
       <CardContent className="pt-5">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-semibold text-slate-900">Zonas ({zones.length})</h2>
+          <h2 className="text-xl font-serif font-normal tracking-tight text-ink">Zonas ({zones.length})</h2>
           <Button onClick={openCreate}>
             <Plus size={16} /> Nueva zona
           </Button>

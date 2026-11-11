@@ -12,8 +12,8 @@ export function MonthSwitcher({ className }: { className?: string }) {
   const loading = useFleetStore((s) => s.loading);
 
   return (
-    <div className={cn("inline-flex items-center gap-1 rounded-xl bg-slate-100/80 p-1 ring-1 ring-inset ring-slate-200", className)}>
-      <CalendarRange size={15} className="ml-1 mr-0.5 shrink-0 text-slate-400" />
+    <div className={cn("inline-flex items-center gap-0.5 rounded-full border border-line p-0.5", className)} role="group" aria-label="Mes de planificación">
+      <CalendarRange size={15} className="ml-2 mr-1 shrink-0 text-muted" aria-hidden />
       {MONTHS.map((m) => {
         const active = m.prefix === month.prefix;
         return (
@@ -22,11 +22,10 @@ export function MonthSwitcher({ className }: { className?: string }) {
             type="button"
             disabled={loading}
             onClick={() => void setMonth(m.prefix)}
+            aria-pressed={active}
             className={cn(
-              "rounded-lg px-2.5 py-1 text-xs font-semibold transition-all disabled:opacity-60",
-              active
-                ? "bg-gradient-to-b from-brand-600 to-brand-700 text-white shadow-sm"
-                : "text-slate-600 hover:bg-white hover:text-brand-700",
+              "min-h-[36px] rounded-full px-3 text-xs font-bold disabled:opacity-60",
+              active ? "bg-ink text-paper" : "text-muted hover:text-ink",
             )}
             title={`Planificar ${m.label}`}
           >

@@ -135,7 +135,7 @@ export function DriversSheet() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <Eyebrow>Datos · {month.label}</Eyebrow>
-          <h2 className="mt-1 flex items-center gap-2 text-xl font-light tracking-tight text-slate-900 sm:text-2xl">
+          <h2 className="mt-1 flex items-center gap-2 text-xl font-serif font-normal tracking-tight text-ink sm:text-2xl">
             <IconChip icon={<Table2 size={16} />} /> Hoja de repartidores
           </h2>
         </div>

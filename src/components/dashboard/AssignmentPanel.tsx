@@ -93,7 +93,7 @@ export function AssignmentPanel() {
     <Card>
       <CardContent className="pt-5">
         <Eyebrow className="mb-2">Asignación</Eyebrow>
-        <h2 className="mb-1 flex items-center gap-2 font-semibold text-slate-900">
+        <h2 className="mb-1 flex items-center gap-2 text-xl font-serif font-normal tracking-tight text-ink">
           <IconChip icon={<Wand2 size={16} />} /> Asignar turno
         </h2>
         <p className="mb-4 text-sm text-slate-500">

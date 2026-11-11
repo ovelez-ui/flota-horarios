@@ -97,7 +97,7 @@ export function DriversAdmin() {
     <Card>
       <CardContent className="pt-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-semibold text-slate-900">Repartidores ({drivers.length})</h2>
+          <h2 className="text-xl font-serif font-normal tracking-tight text-ink">Repartidores ({drivers.length})</h2>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
               <Search size={15} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />

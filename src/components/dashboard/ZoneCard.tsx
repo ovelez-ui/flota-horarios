@@ -20,15 +20,16 @@ export function ZoneCard({ zone, points, drivers }: ZoneCardProps) {
 
   return (
     <Card className="overflow-hidden">
+      {/* El color de la zona pasa a ser una marca de identidad (filete), no un fondo. */}
       <div
-        className="flex items-center justify-between px-4 py-3 text-white"
-        style={{ backgroundColor: zone.color }}
+        className="flex items-center justify-between gap-3 border-b border-line border-l-4 px-4 py-3"
+        style={{ borderLeftColor: zone.color }}
       >
-        <div className="flex items-center gap-2">
-          <MapPin size={16} />
-          <span className="font-semibold">{zone.name}</span>
+        <div className="flex min-w-0 items-center gap-2 text-ink">
+          <MapPin size={16} className="shrink-0" aria-hidden />
+          <span className="truncate font-serif text-lg tracking-tight">{zone.name}</span>
         </div>
-        <span className="text-xs opacity-90">{zone.city}</span>
+        <span className="ed-eyebrow shrink-0">{zone.city}</span>
       </div>
 
       <div className="grid grid-cols-2 divide-x divide-slate-100 border-b border-slate-100">

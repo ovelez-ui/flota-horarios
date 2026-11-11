@@ -17,7 +17,7 @@ export function RulesAdmin() {
       <CardContent className="pt-5">
         <Eyebrow className="mb-2">Configuración</Eyebrow>
         <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="flex items-center gap-2 font-semibold text-slate-900">
+          <h2 className="flex items-center gap-2 text-xl font-serif font-normal tracking-tight text-ink">
             <IconChip icon={<SlidersHorizontal size={16} />} /> Reglas de asignación
           </h2>
           <Button variant="outline" onClick={() => setRules(DEFAULT_RULES)}>

@@ -62,7 +62,7 @@ export function CoverageBoard() {
       <CardContent className="pt-5">
         <Eyebrow className="mb-2">Operación</Eyebrow>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="flex items-center gap-2 font-semibold text-slate-900">
+          <h2 className="flex items-center gap-2 text-xl font-serif font-normal tracking-tight text-ink">
             <IconChip icon={<CalendarRange size={16} />} /> Cobertura por día
           </h2>
           <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">

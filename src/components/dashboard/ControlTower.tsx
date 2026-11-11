@@ -1,16 +1,19 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
-import { Search, Building2, X, Radio } from "lucide-react";
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
+import { ArrowUpRight, Building2, Search, X } from "lucide-react";
 import type { Driver, Shift, ShiftKind } from "@/types";
-import { Card, CardContent, Eyebrow, IconChip, Input, Select } from "@/components/ui";
+import { Input, Select } from "@/components/ui";
+import { CountUp, Magnetic, Reveal, spotlight, useOutOfView } from "@/components/ui/motion";
 import { StoreMultiSelect } from "./StoreMultiSelect";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { shiftKind, isRestCode, specialMeta } from "@/lib/shift-catalog";
-import { totalHours, sundayCompensationAlerts } from "@/lib/shift-rules";
-import { datesOfMonth, shortLabel, weekdayName, toISO } from "@/lib/date-utils";
+import { sundayCompensationAlerts } from "@/lib/shift-rules";
+import { datesOfMonth, parseISO, shortLabel, weekdayName, toISO } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
 
+/** Colores de franja: los mismos del calendario, para que un turno se lea igual en toda la app. */
 const KIND_BG: Record<ShiftKind, string> = {
   MORNING: "bg-sky-100 text-sky-800",
   MID: "bg-violet-100 text-violet-800",
@@ -23,23 +26,23 @@ function turnoChipClass(code: string): string {
   return specialMeta(code)?.cell ?? KIND_BG[shiftKind({ code })];
 }
 
-type Estado =
-  | "En turno" | "Descanso" | "Vacaciones" | "Incapacidad"
-  | "Licencia" | "Compensatorio" | "Día de familia" | "Inactivo" | "Sin turno";
-
-const ESTADO_CLASS: Record<Estado, string> = {
-  "En turno": "bg-sky-100 text-sky-800",
-  "Descanso": "bg-slate-200 text-slate-600",
-  "Vacaciones": "bg-emerald-100 text-emerald-700",
-  "Incapacidad": "bg-rose-100 text-rose-700",
-  "Licencia": "bg-teal-100 text-teal-700",
-  "Compensatorio": "bg-cyan-100 text-cyan-700",
-  "Día de familia": "bg-fuchsia-100 text-fuchsia-700",
-  "Inactivo": "bg-slate-200 text-slate-500",
-  "Sin turno": "bg-slate-100 text-slate-400",
-};
+const ESTADOS = [
+  "En turno", "Descanso", "Vacaciones", "Incapacidad",
+  "Licencia", "Compensatorio", "Día de familia", "Inactivo", "Sin turno",
+] as const;
+type Estado = (typeof ESTADOS)[number];
 
 const NOVEDAD_ESTADOS: Estado[] = ["Vacaciones", "Incapacidad", "Licencia", "Compensatorio", "Día de familia"];
+
+/** Una zona con menos de este % de su gente en turno se marca como baja. */
+const LOW_COVERAGE_PCT = 60;
+/** Tiendas sin cobertura que se listan antes de resumir el resto. */
+const MAX_ALERTS = 5;
+
+const ESTADO_BY_CODE: Record<string, Estado> = {
+  DESC: "Descanso", VACAC: "Vacaciones", INC: "Incapacidad",
+  LIC: "Licencia", COMP: "Compensatorio", FAM: "Día de familia",
+};
 
 function estadoDe(d: Driver, todayShift: Shift | undefined): Estado {
   if (d.status === "INACTIVE") return "Inactivo";
@@ -49,25 +52,43 @@ function estadoDe(d: Driver, todayShift: Shift | undefined): Estado {
     return "Sin turno";
   }
   const sp = specialMeta(todayShift.code);
-  if (sp) {
-    const m: Record<string, Estado> = {
-      DESC: "Descanso", VACAC: "Vacaciones", INC: "Incapacidad",
-      LIC: "Licencia", COMP: "Compensatorio", FAM: "Día de familia",
-    };
-    return m[sp.code] ?? "En turno";
-  }
-  return "En turno";
+  return sp ? (ESTADO_BY_CODE[sp.code] ?? "En turno") : "En turno";
 }
 
-const FRANJAS: { kind: ShiftKind; label: string; bar: string }[] = [
-  { kind: "MORNING", label: "Mañana", bar: "bg-sky-500" },
-  { kind: "MID", label: "Mediodía", bar: "bg-violet-500" },
-  { kind: "AFTERNOON", label: "Tarde", bar: "bg-amber-500" },
-  { kind: "NIGHT", label: "Noche", bar: "bg-indigo-500" },
+/** Un solo código de color para el estado: tinta = en turno, señal = novedad, gris = el resto. */
+function estadoChipClass(estado: Estado): string {
+  if (estado === "En turno") return "ed-chip is-on";
+  if (NOVEDAD_ESTADOS.includes(estado)) return "ed-chip is-out";
+  return "ed-chip";
+}
+
+const FRANJAS: { kind: ShiftKind; label: string }[] = [
+  { kind: "MORNING", label: "Mañana" },
+  { kind: "MID", label: "Mediodía" },
+  { kind: "AFTERNOON", label: "Tarde" },
+  { kind: "NIGHT", label: "Noche" },
 ];
 
-/** Torre de Control: resumen operativo del día (estado de la flota por tienda). */
-export function ControlTower() {
+/** Hora actual (0-23) en Bogotá, sin depender de la zona del navegador. */
+function bogotaHour(): number {
+  const h = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Bogota", hour: "2-digit", hourCycle: "h23" }).format(new Date());
+  return Number(h);
+}
+
+function previousDay(iso: string): string {
+  const d = parseISO(iso);
+  d.setDate(d.getDate() - 1);
+  return toISO(d);
+}
+
+function plural(n: number, one: string, many: string): string {
+  return n === 1 ? one : many;
+}
+
+const cssVars = (vars: Record<string, string | number>) => vars as CSSProperties;
+
+/** Torre de Control: estado de la flota en el día (cifra, pulso de 24 h, alertas y detalle por tienda). */
+export function ControlTower({ onOpenCalendar }: { onOpenCalendar?: () => void }) {
   const zones = useFleetStore((s) => s.zones);
   const pointsOfSale = useFleetStore((s) => s.pointsOfSale);
   const drivers = useFleetStore((s) => s.drivers);
@@ -88,6 +109,20 @@ export function ControlTower() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dates]);
 
+  // Coreografía de entrada y cifra en la sub-barra cuando el hero sale de pantalla.
+  const [ready, setReady] = useState(false);
+  const [miniSlot, setMiniSlot] = useState<HTMLElement | null>(null);
+  const [figureRef, figureOut] = useOutOfView<HTMLSpanElement>();
+  const tableRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    setMiniSlot(document.getElementById("dash-mini"));
+    const raf = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const isToday = day === todayISO;
+  const nowHour = bogotaHour();
+
   const zoneName = useMemo(() => new Map(zones.map((z) => [z.id, z.name])), [zones]);
   const posName = useMemo(() => new Map(pointsOfSale.map((p) => [p.id, p.name])), [pointsOfSale]);
 
@@ -100,42 +135,42 @@ export function ControlTower() {
     [pointsOfSale, zoneId],
   );
 
-  // Turno del día y horas del mes por repartidor.
-  const shiftOfDay = useMemo(() => {
-    const m = new Map<string, Shift>();
-    for (const s of shifts) if (s.date === day) m.set(s.driverId, s);
-    return m;
-  }, [shifts, day]);
+  // Toda la flota con su turno y estado del día.
+  const fleet = useMemo(() => {
+    const shiftOfDay = new Map<string, Shift>();
+    const hours = new Map<string, number>();
+    for (const s of shifts) {
+      if (s.date === day) shiftOfDay.set(s.driverId, s);
+      hours.set(s.driverId, (hours.get(s.driverId) ?? 0) + (s.hours || 0));
+    }
+    return drivers.map((d) => {
+      const ts = shiftOfDay.get(d.id);
+      return { d, ts, estado: estadoDe(d, ts), horas: Math.round((hours.get(d.id) ?? 0) * 10) / 10 };
+    });
+  }, [drivers, shifts, day]);
 
-  const hoursByDriver = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const s of shifts) m.set(s.driverId, (m.get(s.driverId) ?? 0) + (s.hours || 0));
-    return m;
-  }, [shifts]);
+  // Alcance (zona + tiendas): de aquí salen la cifra, el pulso y las alertas.
+  const scope = useMemo(
+    () => fleet.filter((r) => (!zoneId || r.d.zoneId === zoneId) && (posIds.length === 0 || posIds.includes(r.d.basePointOfSaleId))),
+    [fleet, zoneId, posIds],
+  );
 
-  // Repartidores en alcance (zona + tiendas) con sus datos del día.
-  const scope = useMemo(() => {
+  // Filas de la tabla: el alcance, afinado por estado y búsqueda.
+  const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return drivers
-      .filter((d) => (!zoneId || d.zoneId === zoneId) && (posIds.length === 0 || posIds.includes(d.basePointOfSaleId)))
-      .map((d) => {
-        const ts = shiftOfDay.get(d.id);
-        return {
-          d,
-          ts,
-          estado: estadoDe(d, ts),
-          horas: Math.round((hoursByDriver.get(d.id) ?? 0) * 10) / 10,
-        };
-      })
-      .filter((r) => (!estado || r.estado === estado))
-      .filter((r) => {
-        if (!q) return true;
-        const hay = `${r.d.name} ${r.d.id} ${zoneName.get(r.d.zoneId) ?? ""} ${posName.get(r.d.basePointOfSaleId) ?? ""}`.toLowerCase();
-        return hay.includes(q);
-      });
-  }, [drivers, zoneId, posIds, estado, query, shiftOfDay, hoursByDriver, zoneName, posName]);
+    return scope.filter((r) => {
+      if (estado && r.estado !== estado) return false;
+      if (!q) return true;
+      const hay = `${r.d.name} ${r.d.id} ${zoneName.get(r.d.zoneId) ?? ""} ${posName.get(r.d.basePointOfSaleId) ?? ""}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [scope, estado, query, zoneName, posName]);
 
-  // KPIs del día sobre el alcance.
+  const compAlerts = useMemo(() => {
+    const ids = new Set(scope.map((r) => r.d.id));
+    return sundayCompensationAlerts(shifts.filter((s) => ids.has(s.driverId)), rules).filter((a) => !a.compensated);
+  }, [scope, shifts, rules]);
+
   const kpi = useMemo(() => {
     let enTurno = 0, descansos = 0, novedades = 0, activos = 0;
     for (const r of scope) {
@@ -144,244 +179,435 @@ export function ControlTower() {
       if (NOVEDAD_ESTADOS.includes(r.estado)) novedades++;
       if (r.d.status === "ACTIVE") activos++;
     }
-    const ids = new Set(scope.map((r) => r.d.id));
-    const pend = sundayCompensationAlerts(shifts.filter((s) => ids.has(s.driverId)), rules).filter((a) => !a.compensated).length;
     const cobertura = scope.length ? Math.round((enTurno / scope.length) * 100) : 0;
-    return { enTurno, descansos, novedades, activos, total: scope.length, pend, cobertura };
-  }, [scope, shifts, rules]);
+    return { enTurno, descansos, novedades, activos, total: scope.length, cobertura };
+  }, [scope]);
 
-  // Cobertura por franja (del día, en alcance).
+  // Pulso de 24 h: repartidores del alcance trabajando en cada hora del día
+  // (incluye la cola de los turnos nocturnos que empezaron el día anterior).
+  const byHour = useMemo(() => {
+    const ids = new Set(scope.map((r) => r.d.id));
+    const prev = previousDay(day);
+    const counts = Array.from({ length: 24 }, () => 0);
+    for (const s of shifts) {
+      if (s.start === null || s.end === null || isRestCode(s.code) || !ids.has(s.driverId)) continue;
+      const end = s.end <= s.start ? s.end + 24 : s.end;
+      const [from, to] = s.date === day ? [s.start, Math.min(end, 24)] : s.date === prev ? [0, end - 24] : [0, 0];
+      for (let h = Math.floor(from); h < to; h++) counts[h]!++;
+    }
+    const peak = Math.max(...counts);
+    return { counts, peak, peakHour: counts.indexOf(peak) };
+  }, [scope, shifts, day]);
+
   const porFranja = useMemo(() => {
     const m = new Map<ShiftKind, number>();
-    let max = 1;
     for (const r of scope) {
       if (!r.ts || isRestCode(r.ts.code)) continue;
       const k = shiftKind(r.ts);
-      const n = (m.get(k) ?? 0) + 1;
-      m.set(k, n);
-      if (n > max) max = n;
+      m.set(k, (m.get(k) ?? 0) + 1);
     }
-    return { m, max };
+    return { m, max: Math.max(1, ...m.values()) };
   }, [scope]);
 
-  // Pendientes de compensatorio (para el panel lateral).
-  const pendientes = useMemo(() => {
-    const ids = new Set(scope.map((r) => r.d.id));
-    const nameById = new Map(scope.map((r) => [r.d.id, r.d.name]));
-    const posById = new Map(scope.map((r) => [r.d.id, posName.get(r.d.basePointOfSaleId) ?? ""]));
-    return sundayCompensationAlerts(shifts.filter((s) => ids.has(s.driverId)), rules)
-      .filter((a) => !a.compensated)
-      .slice(0, 6)
-      .map((a) => ({ ...a, name: nameById.get(a.driverId) ?? a.driverId, pos: posById.get(a.driverId) ?? "" }));
-  }, [scope, shifts, rules, posName]);
+  // Sin ningún turno cargado ese día no hay nada que alertar: falta la malla, no la cobertura.
+  const sinMalla = scope.length > 0 && scope.every((r) => !r.ts);
 
-  // Agrupar el alcance por tienda.
-  const groups = useMemo(() => {
+  // Tiendas del alcance sin nadie en turno ese día, con el motivo dominante.
+  const uncovered = useMemo(() => {
+    if (sinMalla) return [];
     const byPos = new Map<string, typeof scope>();
-    for (const r of scope) {
-      const arr = byPos.get(r.d.basePointOfSaleId) ?? [];
-      arr.push(r);
-      byPos.set(r.d.basePointOfSaleId, arr);
-    }
+    for (const r of scope) byPos.set(r.d.basePointOfSaleId, [...(byPos.get(r.d.basePointOfSaleId) ?? []), r]);
     return [...byPos.entries()]
-      .map(([pid, rows]) => ({ id: pid, name: posName.get(pid) ?? "Sin punto de venta", rows }))
+      .filter(([, rs]) => rs.every((r) => r.estado !== "En turno"))
+      .map(([pid, rs]) => {
+        const tally = new Map<Estado, number>();
+        for (const r of rs) tally.set(r.estado, (tally.get(r.estado) ?? 0) + 1);
+        const motivo = [...tally.entries()].sort((a, b) => b[1] - a[1]).slice(0, 2).map(([e, n]) => `${n} ${e.toLowerCase()}`).join(" · ");
+        return { id: pid, name: posName.get(pid) ?? "Sin punto de venta", zone: zoneName.get(rs[0]!.d.zoneId) ?? "", motivo };
+      })
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [scope, posName]);
+  }, [scope, sinMalla, posName, zoneName]);
 
-  const kpis = [
-    { cap: "En turno hoy", val: String(kpi.enTurno), dot: "bg-sky-500", foot: `de ${kpi.total} en alcance` },
-    { cap: "Descansos", val: String(kpi.descansos), dot: "bg-slate-400", foot: "del día" },
-    { cap: "Novedades", val: String(kpi.novedades), dot: "bg-emerald-500", foot: "vac · inc · lic · comp" },
-    { cap: "Cobertura", val: `${kpi.cobertura}%`, dot: "bg-emerald-500", foot: "en turno / alcance" },
-    { cap: "Dom. sin compensar", val: String(kpi.pend), dot: "bg-amber-500", foot: "del mes" },
-    { cap: "Activos", val: String(kpi.activos), dot: "bg-brand-600", foot: `${kpi.total ? Math.round((kpi.activos / kpi.total) * 100) : 0}% del alcance` },
-  ];
+  // Cobertura por zona sobre toda la flota (no depende del filtro de zona: es el mapa para elegirla).
+  const zoneStats = useMemo(() => {
+    const tally = new Map<string, { total: number; on: number }>();
+    for (const r of fleet) {
+      const t = tally.get(r.d.zoneId) ?? { total: 0, on: 0 };
+      t.total++;
+      if (r.estado === "En turno") t.on++;
+      tally.set(r.d.zoneId, t);
+    }
+    return zones
+      .filter((z) => tally.has(z.id))
+      .map((z, i) => {
+        const t = tally.get(z.id)!;
+        return { id: z.id, name: z.name, short: String(i + 1).padStart(2, "0"), pct: Math.round((t.on / t.total) * 100), ...t };
+      });
+  }, [fleet, zones]);
+  const lowZones = sinMalla ? 0 : zoneStats.filter((z) => z.pct < LOW_COVERAGE_PCT).length;
+
+  const novedades = useMemo(
+    () => NOVEDAD_ESTADOS.map((e) => ({ estado: e, n: scope.filter((r) => r.estado === e).length })),
+    [scope],
+  );
+
+  const pendientes = useMemo(() => {
+    const byId = new Map(scope.map((r) => [r.d.id, r.d]));
+    return compAlerts.slice(0, 6).map((a) => {
+      const d = byId.get(a.driverId);
+      return { ...a, name: d?.name ?? a.driverId, pos: d ? (posName.get(d.basePointOfSaleId) ?? "") : "" };
+    });
+  }, [compAlerts, scope, posName]);
+
+  // Filas agrupadas por tienda.
+  const groups = useMemo(() => {
+    const byPos = new Map<string, typeof rows>();
+    for (const r of rows) byPos.set(r.d.basePointOfSaleId, [...(byPos.get(r.d.basePointOfSaleId) ?? []), r]);
+    return [...byPos.entries()]
+      .map(([pid, rs]) => ({ id: pid, name: posName.get(pid) ?? "Sin punto de venta", rows: rs }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [rows, posName]);
+
+  /** Lleva la tabla a una tienda sin tocar el alcance (la cifra del hero no cambia). */
+  function showStore(name: string) {
+    setEstado("");
+    setQuery(name);
+    tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  const dayText = isToday ? "hoy" : `el ${shortLabel(day)}`;
+  const leadAlert =
+    uncovered.length === 0
+      ? "Todas las tiendas tienen repartidor en turno."
+      : `${uncovered.length} ${plural(uncovered.length, "tienda queda", "tiendas quedan")} sin repartidor en turno.`;
 
   return (
-    <div className="space-y-5">
-      {/* Encabezado */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <Eyebrow>Pasteur · resumen operativo</Eyebrow>
-          <h2 className="mt-1 flex items-center gap-2 text-xl font-light tracking-tight text-slate-900 sm:text-2xl">
-            <IconChip icon={<Radio size={16} />} /> Torre de Control
-          </h2>
-        </div>
-        <label className="text-sm">
-          <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Día</span>
-          <Select value={day} onChange={(e) => setDay(e.target.value)} className="h-9 w-auto">
-            {dates.map((d) => (
-              <option key={d} value={d}>{shortLabel(d)} · {weekdayName(d)}</option>
-            ))}
-          </Select>
-        </label>
-      </div>
+    <div>
+      {/* ================= HERO ================= */}
+      <section className={cn("ed-hero", ready && "ed-ready")} aria-labelledby="torre-title">
+        <div className="min-w-0">
+          <p className="ed-eyebrow ed-rise flex flex-wrap items-center gap-x-4 gap-y-2" style={cssVars({ "--i": 0 })}>
+            {isToday ? (
+              <span className="ed-live"><i aria-hidden />En vivo</span>
+            ) : (
+              <span>Consulta</span>
+            )}
+            <span>Torre de control</span>
+            <span>{weekdayName(day)} {shortLabel(day)}</span>
+          </p>
 
-      {/* Filtros */}
-      <Card>
-        <CardContent className="flex flex-wrap items-end gap-3 pt-5">
-          <label className="text-sm">
-            <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Zona</span>
-            <Select value={zoneId} onChange={(e) => { setZoneId(e.target.value); setPosIds([]); }} className="h-9 w-48">
-              <option value="">Todas las zonas</option>
-              {zones.map((z) => (<option key={z.id} value={z.id}>{z.name}</option>))}
-            </Select>
-          </label>
-          <div className="text-sm">
-            <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Tiendas</span>
-            <StoreMultiSelect options={storeOptions} selected={posIds} onChange={setPosIds} />
-          </div>
-          <label className="text-sm">
-            <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Estado</span>
-            <Select value={estado} onChange={(e) => setEstado(e.target.value)} className="h-9 w-44">
-              <option value="">Todos</option>
-              {(Object.keys(ESTADO_CLASS) as Estado[]).map((e) => (<option key={e} value={e}>{e}</option>))}
-            </Select>
-          </label>
-          <label className="min-w-[200px] flex-1 text-sm">
-            <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Buscar</span>
-            <span className="relative block">
-              <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cédula, nombre, zona o tienda…" className="h-9 pl-9 pr-9" />
-              {query && (
-                <button type="button" onClick={() => setQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 hover:bg-slate-100" aria-label="Limpiar">
-                  <X size={14} />
-                </button>
-              )}
+          <h2 className="ed-figure" id="torre-title">
+            <span className="sr-only">{kpi.enTurno} de {kpi.total} repartidores con turno {dayText}</span>
+            <span ref={figureRef} className="ed-figure-num" aria-hidden><CountUp value={kpi.enTurno} /></span>
+            <span className="ed-figure-cap ed-rise" style={cssVars({ "--i": 3 })} aria-hidden>
+              de {kpi.total} repartidores<b>con turno {dayText}</b>
             </span>
-          </label>
-        </CardContent>
-      </Card>
+          </h2>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {kpis.map((k) => (
-          <Card key={k.cap}>
-            <CardContent className="pt-5">
-              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                <span className={cn("h-2 w-2 rounded", k.dot)} /> {k.cap}
-              </p>
-              <p className="mt-1.5 text-3xl font-light leading-none tracking-tight tabular-nums text-slate-900">{k.val}</p>
-              <p className="mt-1.5 text-[11px] text-slate-400">{k.foot}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+          <p className="ed-lead ed-rise" style={cssVars({ "--i": 4 })}>
+            {kpi.total === 0 ? (
+              "No hay repartidores en este alcance."
+            ) : sinMalla ? (
+              `Aún no hay malla cargada para ${dayText}.`
+            ) : (
+              <>Cobertura del {kpi.cobertura}&nbsp;%. {uncovered.length > 0 ? <em>{leadAlert}</em> : leadAlert}</>
+            )}
+          </p>
 
-      {/* Cuerpo: tabla + panel lateral */}
-      <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
-        <Card className="min-w-0">
-          <CardContent className="pt-5">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <div>
-                <Eyebrow>Operación · {shortLabel(day)}</Eyebrow>
-                <h3 className="mt-0.5 font-semibold text-slate-900">Repartidores por tienda</h3>
-              </div>
-              <span className="text-xs text-slate-400">{scope.length} repartidor(es)</span>
+          <div className="ed-rise mt-8 flex flex-wrap items-center gap-x-7 gap-y-4" style={cssVars({ "--i": 5 })}>
+            {uncovered.length > 0 ? (
+              <>
+                <Magnetic>
+                  <a className="ed-cta" href="#torre-alertas">
+                    Revisar {uncovered.length} {plural(uncovered.length, "alerta", "alertas")}
+                    <ArrowUpRight size={18} strokeWidth={2.25} aria-hidden />
+                  </a>
+                </Magnetic>
+                {onOpenCalendar && (
+                  <button type="button" className="ed-link" onClick={onOpenCalendar}>Abrir el calendario</button>
+                )}
+              </>
+            ) : (
+              onOpenCalendar && (
+                <Magnetic>
+                  <button type="button" className="ed-cta" onClick={onOpenCalendar}>
+                    Abrir el calendario
+                    <ArrowUpRight size={18} strokeWidth={2.25} aria-hidden />
+                  </button>
+                </Magnetic>
+              )
+            )}
+          </div>
+
+          <dl className="ed-facts ed-rise" style={cssVars({ "--i": 6 })}>
+            <div><dt className="ed-eyebrow">Descansos</dt><dd>{kpi.descansos}</dd></div>
+            <div><dt className="ed-eyebrow">Novedades</dt><dd>{kpi.novedades}</dd></div>
+            <div><dt className="ed-eyebrow">Dom. sin compensar</dt><dd>{compAlerts.length}</dd></div>
+            <div><dt className="ed-eyebrow">Activos</dt><dd>{kpi.activos}</dd></div>
+          </dl>
+
+          {/* Alcance: define de quién habla la cifra. */}
+          <div className="ed-rise mt-8 flex flex-wrap items-end gap-3" style={cssVars({ "--i": 7 })}>
+            <label className="text-sm">
+              <span className="ed-eyebrow mb-1.5 block">Día</span>
+              <Select value={day} onChange={(e) => setDay(e.target.value)} className="h-10 w-auto">
+                {dates.map((d) => (
+                  <option key={d} value={d}>{shortLabel(d)} · {weekdayName(d)}</option>
+                ))}
+              </Select>
+            </label>
+            <label className="text-sm">
+              <span className="ed-eyebrow mb-1.5 block">Zona</span>
+              <Select value={zoneId} onChange={(e) => { setZoneId(e.target.value); setPosIds([]); }} className="h-10 w-48">
+                <option value="">Todas las zonas</option>
+                {zones.map((z) => (<option key={z.id} value={z.id}>{z.name}</option>))}
+              </Select>
+            </label>
+            <div className="text-sm">
+              <span className="ed-eyebrow mb-1.5 block">Tiendas</span>
+              <StoreMultiSelect options={storeOptions} selected={posIds} onChange={setPosIds} />
             </div>
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="bg-slate-50 text-left text-[10px] uppercase tracking-wide text-slate-500">
-                    <th className="px-3 py-2">Repartidor</th>
-                    <th className="px-3 py-2">Zona</th>
-                    <th className="px-3 py-2 text-center">Turno hoy</th>
-                    <th className="px-3 py-2 text-center">Estado</th>
-                    <th className="px-3 py-2 text-right">Horas mes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {groups.map((g) => (
-                    <Fragment key={g.id}>
-                      <tr className="bg-slate-50">
-                        <td colSpan={5} className="border-y border-slate-200 px-3 py-1.5">
-                          <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
-                            <Building2 size={12} className="text-slate-400" /> {g.name}
-                            <span className="font-normal text-slate-400">· {g.rows.length}</span>
-                          </span>
-                        </td>
-                      </tr>
-                      {g.rows.map(({ d, ts, estado: est, horas }) => (
-                        <tr key={d.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
-                          <td className="px-3 py-2">
-                            <div className="font-medium leading-tight text-slate-800">{d.name}</div>
-                            <div className="text-[11px] tabular-nums text-slate-400">C.C. {d.id}</div>
-                          </td>
-                          <td className="px-3 py-2 text-slate-500">{zoneName.get(d.zoneId) ?? d.zoneId}</td>
-                          <td className="px-3 py-2 text-center">
-                            {ts ? (
-                              <span className={cn("inline-flex h-6 min-w-[52px] items-center justify-center rounded-md px-2 text-[11px] font-semibold", turnoChipClass(ts.code))}>
-                                {specialMeta(ts.code)?.abbr ?? ts.code}
-                              </span>
-                            ) : (
-                              <span className="text-slate-300">—</span>
-                            )}
-                          </td>
-                          <td className="px-3 py-2 text-center">
-                            <span className={cn("inline-flex h-6 items-center rounded-full px-2.5 text-[11px] font-semibold", ESTADO_CLASS[est])}>{est}</span>
-                          </td>
-                          <td className="px-3 py-2 text-right tabular-nums text-slate-600">{horas} h</td>
-                        </tr>
-                      ))}
-                    </Fragment>
-                  ))}
-                  {groups.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="px-3 py-10 text-center text-slate-400">No hay repartidores para el filtro.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-5">
-          <Card>
-            <CardContent className="pt-5">
-              <Eyebrow>Cobertura · {shortLabel(day)}</Eyebrow>
-              <h3 className="mt-0.5 font-semibold text-slate-900">Por franja horaria</h3>
-              <div className="mt-3 space-y-2.5">
-                {FRANJAS.map((f) => {
-                  const n = porFranja.m.get(f.kind) ?? 0;
-                  const pct = Math.round((n / porFranja.max) * 100);
-                  return (
-                    <div key={f.kind} className="grid grid-cols-[70px_1fr_34px] items-center gap-2.5">
-                      <span className="text-xs font-medium text-slate-500">{f.label}</span>
-                      <span className="h-2 overflow-hidden rounded-full bg-slate-100">
-                        <span className={cn("block h-full rounded-full", f.bar)} style={{ width: `${pct}%` }} />
-                      </span>
-                      <span className="text-right text-xs font-semibold tabular-nums text-slate-700">{n}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-5">
-              <Eyebrow className="text-amber-600 dark:text-amber-300">Atención</Eyebrow>
-              <h3 className="mt-0.5 font-semibold text-slate-900">Compensatorios pendientes</h3>
-              {pendientes.length === 0 ? (
-                <p className="mt-3 text-sm text-slate-400">Sin pendientes en el alcance.</p>
-              ) : (
-                <ul className="mt-3 space-y-2.5">
-                  {pendientes.map((a) => (
-                    <li key={`${a.driverId}-${a.sundayDate}`} className="flex items-start gap-2.5">
-                      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-amber-50 text-xs font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">!</span>
-                      <div className="min-w-0">
-                        <div className="truncate text-[13px] font-medium text-slate-700">{a.name} · dom {shortLabel(a.sundayDate)}</div>
-                        <div className="truncate text-[11px] text-slate-400">{a.pos} · vence {shortLabel(a.dueBy)}</div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          </div>
         </div>
-      </div>
+
+        <aside className="ed-rise min-w-0 self-end" style={cssVars({ "--i": 2 })} aria-labelledby="torre-pulso">
+          <div className="flex items-baseline justify-between gap-4 border-b border-ink pb-3.5">
+            <h3 id="torre-pulso" className="ed-serif text-[1.375rem] leading-tight text-ink">Pulso de 24 horas</h3>
+            <p className="ed-eyebrow">
+              {isToday ? `Ahora · ${byHour.counts[nowHour]} en turno` : "Repartidores por hora"}
+            </p>
+          </div>
+          <ol
+            className="ed-hours"
+            role="img"
+            aria-label={`Repartidores en turno por hora ${dayText}. Máximo de ${byHour.peak} a las ${byHour.peakHour}:00.`}
+          >
+            {byHour.counts.map((n, h) => {
+              const state = !isToday ? (day > todayISO ? "is-next" : "") : h === nowHour ? "is-now" : h > nowHour ? "is-next" : "";
+              return (
+                <li key={h} className={state} title={`${String(h).padStart(2, "0")}:00 · ${n} ${plural(n, "repartidor", "repartidores")}`}>
+                  <i style={cssVars({ "--v": byHour.peak ? n / byHour.peak : 0, "--i": h })} />
+                </li>
+              );
+            })}
+          </ol>
+          <div className="ed-num mt-2 flex justify-between text-[0.6875rem] text-muted" aria-hidden>
+            <span>00</span><span>06</span><span>12</span><span>18</span><span>23</span>
+          </div>
+          <p className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[0.8125rem] text-muted" aria-hidden>
+            <span className="inline-flex items-center gap-2"><i className="h-3 w-3 bg-data" />Transcurrido</span>
+            <span className="inline-flex items-center gap-2"><i className="h-3 w-3 bg-signal" />Ahora</span>
+            <span className="inline-flex items-center gap-2"><i className="ed-key-next h-3 w-3" />Programado</span>
+          </p>
+
+          <ul className="ed-slots mt-7 border-t border-line" aria-label={`Repartidores programados ${dayText} por franja`}>
+            {FRANJAS.map((f, i) => {
+              const n = porFranja.m.get(f.kind) ?? 0;
+              return (
+                <li key={f.kind}>
+                  <span>{f.label}</span>
+                  <span className="ed-track"><i style={cssVars({ "--v": n / porFranja.max, "--i": i })} /></span>
+                  <span className="ed-num text-right">{n}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </aside>
+      </section>
+
+      {/* ================= BENTO ================= */}
+      <section className="pb-12 lg:px-[2.5vw]" aria-labelledby="torre-atencion">
+        <Reveal as="header" className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2 pb-5">
+          <h3 id="torre-atencion" className="ed-serif text-[clamp(1.75rem,3.4vw,3rem)] leading-none tracking-tight text-ink">
+            Lo que pide atención
+          </h3>
+          <p className="ed-eyebrow">
+            {uncovered.length} {plural(uncovered.length, "tienda", "tiendas")} sin cobertura · {lowZones} {plural(lowZones, "zona", "zonas")} bajo {LOW_COVERAGE_PCT}&nbsp;%
+          </p>
+        </Reveal>
+
+        <div className="ed-bento">
+          <Reveal as="article" id="torre-alertas" className="ed-cell ed-cell--ink scroll-mt-40" onPointerMove={spotlight}>
+            <p className="ed-eyebrow">Alertas · {shortLabel(day)}</p>
+            <h4 className="ed-serif mt-2 text-[1.375rem] leading-tight">Tiendas sin cobertura</h4>
+            {uncovered.length === 0 ? (
+              <p className="mt-6 text-muted">
+                {sinMalla ? "Sin malla cargada para este día: no hay cobertura que evaluar." : "Ninguna tienda del alcance queda sin repartidor en turno."}
+              </p>
+            ) : (
+              <ol className="mt-6">
+                {uncovered.slice(0, MAX_ALERTS).map((u, i) => (
+                  <li key={u.id} className="border-t border-line-soft">
+                    <button type="button" className="ed-alert" onClick={() => showStore(u.name)}>
+                      <span className="n" aria-hidden>{i + 1}</span>
+                      <span className="min-w-0">
+                        <strong className="block truncate font-black">{u.name}</strong>
+                        <small className="block truncate text-sm text-muted">{u.zone} · {u.motivo}</small>
+                      </span>
+                      <ArrowUpRight size={18} aria-hidden />
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            )}
+            {uncovered.length > MAX_ALERTS && (
+              <p className="border-t border-line-soft pt-4 text-sm text-muted">
+                y {uncovered.length - MAX_ALERTS} más · filtra la tabla por estado para verlas todas.
+              </p>
+            )}
+          </Reveal>
+
+          <Reveal as="article" index={1} className="ed-cell" onPointerMove={spotlight}>
+            <p className="ed-eyebrow">Cobertura por zona · elige una para acotar</p>
+            <h4 className="ed-serif mt-2 text-[1.375rem] leading-tight">
+              {zoneStats.length} {plural(zoneStats.length, "zona", "zonas")}, {lowZones} bajo {LOW_COVERAGE_PCT}&nbsp;%
+            </h4>
+            <ul className="ed-zones">
+              {zoneStats.map((z) => (
+                <li key={z.id}>
+                  <button
+                    type="button"
+                    className={cn("ed-zone", !sinMalla && z.pct < LOW_COVERAGE_PCT && "is-low")}
+                    style={cssVars({ "--c": z.pct })}
+                    aria-pressed={zoneId === z.id}
+                    title={`${z.name} · ${z.on} de ${z.total} en turno`}
+                    onClick={() => { setZoneId(zoneId === z.id ? "" : z.id); setPosIds([]); }}
+                  >
+                    <span><span className="sr-only">{z.name}: </span>{z.short}</span>
+                    <small>{z.pct}&nbsp;%{!sinMalla && z.pct < LOW_COVERAGE_PCT && <span className="sr-only"> · cobertura baja</span>}</small>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+
+          <Reveal as="article" index={2} className="ed-cell" onPointerMove={spotlight}>
+            <p className="ed-eyebrow">Novedades · {shortLabel(day)}</p>
+            <h4 className="ed-serif mt-2 text-[1.375rem] leading-tight">
+              {kpi.novedades} {plural(kpi.novedades, "repartidor fuera", "repartidores fuera")} por novedad
+            </h4>
+            <dl className="mt-6 grid grid-cols-2 gap-x-8 gap-y-5 sm:grid-cols-5">
+              {novedades.map((nv) => (
+                <div key={nv.estado} className={cn(nv.n === 0 && "opacity-45")}>
+                  <dd className="font-serif text-[2.5rem] font-light leading-none tabular-nums">{nv.n}</dd>
+                  <dt className="mt-1 text-sm text-muted">{nv.estado}</dt>
+                </div>
+              ))}
+            </dl>
+
+            <h5 className="ed-eyebrow mt-8 border-t border-line-soft pt-5">Compensatorios pendientes · {compAlerts.length}</h5>
+            {pendientes.length === 0 ? (
+              <p className="mt-3 text-sm text-muted">Sin pendientes en el alcance.</p>
+            ) : (
+              <ul className="mt-3 grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
+                {pendientes.map((a) => (
+                  <li key={`${a.driverId}-${a.sundayDate}`} className="min-w-0">
+                    <div className="truncate text-sm font-bold">{a.name} · dom {shortLabel(a.sundayDate)}</div>
+                    <div className="truncate text-xs text-muted">{a.pos} · vence {shortLabel(a.dueBy)}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ================= DETALLE POR TIENDA ================= */}
+      <section ref={tableRef} className="scroll-mt-36 pb-10 lg:px-[2.5vw]" aria-labelledby="torre-detalle">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 pb-4">
+          <div>
+            <p className="ed-eyebrow">Operación · {shortLabel(day)} · {rows.length} {plural(rows.length, "repartidor", "repartidores")}</p>
+            <h3 id="torre-detalle" className="ed-serif mt-1.5 text-2xl text-ink">Repartidores por tienda</h3>
+          </div>
+          <div className="flex flex-1 flex-wrap items-end justify-end gap-3">
+            <label className="text-sm">
+              <span className="ed-eyebrow mb-1.5 block">Estado</span>
+              <Select value={estado} onChange={(e) => setEstado(e.target.value)} className="h-10 w-44">
+                <option value="">Todos</option>
+                {ESTADOS.map((e) => (<option key={e} value={e}>{e}</option>))}
+              </Select>
+            </label>
+            <label className="min-w-[200px] max-w-md flex-1 text-sm">
+              <span className="ed-eyebrow mb-1.5 block">Buscar</span>
+              <span className="relative block">
+                <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" aria-hidden />
+                <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cédula, nombre, zona o tienda…" className="h-10 pl-9 pr-10" />
+                {query && (
+                  <button type="button" onClick={() => setQuery("")} className="absolute right-1 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded text-muted hover:text-ink" aria-label="Limpiar búsqueda">
+                    <X size={14} />
+                  </button>
+                )}
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto border border-line bg-surface">
+          <table className="w-full border-collapse text-sm text-ink">
+            <thead>
+              <tr className="ed-eyebrow border-b border-line text-left">
+                <th className="px-4 py-3 font-medium">Repartidor</th>
+                <th className="px-4 py-3 font-medium">Zona</th>
+                <th className="px-4 py-3 text-center font-medium">Turno</th>
+                <th className="px-4 py-3 text-center font-medium">Estado</th>
+                <th className="px-4 py-3 text-right font-medium">Horas mes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groups.map((g) => (
+                <Fragment key={g.id}>
+                  <tr>
+                    <th colSpan={5} scope="colgroup" className="border-y border-line-soft bg-paper px-4 py-2 text-left">
+                      <span className="ed-eyebrow flex items-center gap-2">
+                        <Building2 size={12} aria-hidden /> {g.name} · {g.rows.length}
+                      </span>
+                    </th>
+                  </tr>
+                  {g.rows.map(({ d, ts, estado: est, horas }) => (
+                    <tr key={d.id} className="border-b border-line-soft last:border-0">
+                      <td className="px-4 py-2.5">
+                        <div className="font-bold leading-tight">{d.name}</div>
+                        <div className="ed-num text-[0.6875rem] text-muted">C.C. {d.id}</div>
+                      </td>
+                      <td className="px-4 py-2.5 text-muted">{zoneName.get(d.zoneId) ?? d.zoneId}</td>
+                      <td className="px-4 py-2.5 text-center">
+                        {ts ? (
+                          <span className={cn("ed-num inline-flex h-6 min-w-[52px] items-center justify-center rounded px-2 text-[0.6875rem] font-medium", turnoChipClass(ts.code))}>
+                            {specialMeta(ts.code)?.abbr ?? ts.code}
+                          </span>
+                        ) : (
+                          <span className="text-muted" aria-label="Sin turno">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-center"><span className={estadoChipClass(est)}>{est}</span></td>
+                      <td className="ed-num px-4 py-2.5 text-right">{horas} h</td>
+                    </tr>
+                  ))}
+                </Fragment>
+              ))}
+              {groups.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-12 text-center text-muted">
+                    Ningún repartidor coincide con el filtro.{" "}
+                    <button type="button" className="font-bold text-ink underline" onClick={() => { setEstado(""); setQuery(""); }}>
+                      Limpiar filtros
+                    </button>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Continuidad: la cifra viaja a la sub-barra cuando el hero sale de pantalla. */}
+      {miniSlot &&
+        createPortal(
+          <span className={cn("ed-mini", figureOut && "is-on")} aria-hidden>
+            <b>{kpi.enTurno}</b>/{kpi.total} con turno · {kpi.cobertura}&nbsp;%
+          </span>,
+          miniSlot,
+        )}
     </div>
   );
 }

@@ -243,7 +243,7 @@ export function Analytics() {
         <CardContent className="pt-5">
           <Eyebrow className="mb-2">Indicadores</Eyebrow>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="flex items-center gap-2 font-semibold text-slate-900">
+            <h2 className="flex items-center gap-2 text-xl font-serif font-normal tracking-tight text-ink">
               <IconChip icon={<BarChart3 size={16} />} /> Analítica por zona · {month.label}
             </h2>
             <Select value={zoneId} onChange={(e) => { setZoneId(e.target.value); setSelectedDriverId(null); }} className="h-9 w-auto">
@@ -285,7 +285,7 @@ export function Analytics() {
       <Card>
         <CardContent className="pt-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-semibold text-slate-900">Repartidores de la zona ({zoneDrivers.length})</h2>
+            <h2 className="text-xl font-serif font-normal tracking-tight text-ink">Repartidores de la zona ({zoneDrivers.length})</h2>
             <div className="relative">
               <Search size={15} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar…" className="h-9 w-48 pl-8" />

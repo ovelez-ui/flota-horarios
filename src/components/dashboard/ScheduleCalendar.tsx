@@ -332,7 +332,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
       <CardContent className="pt-5">
         <Eyebrow className="mb-2">Planificación</Eyebrow>
         <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="flex items-center gap-2 font-semibold text-slate-900">
+          <h2 className="flex items-center gap-2 text-xl font-serif font-normal tracking-tight text-ink">
             <IconChip icon={<CalendarDays size={16} />} /> Malla mensual · {month.label}
           </h2>
           <div className="flex flex-wrap items-center gap-2">

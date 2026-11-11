@@ -1,7 +1,59 @@
-@import url("https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Lato:wght@300;400;700;900&family=Roboto+Mono:wght@400;500&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ============================================================
+   Tokens "Despacho Editorial": papel + navy + una sola señal roja.
+   ============================================================ */
+:root {
+  --paper: #f2efe8;
+  --surface: #fbfaf6;
+  --ink: #011a4b;
+  --muted: #45577a;
+  --line: rgb(1 26 75 / 0.16);
+  --line-soft: rgb(1 26 75 / 0.08);
+  --data: #003b71;
+  --signal: #c81a13;
+  --action: #ad0f0a;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Neutros: las utilidades slate/white se reasignan a esta familia (ver abajo). */
+  --n-50: #f6f3ed;
+  --n-100: #ece8df;
+  --n-200: #e0dbd0;
+  --n-300: #cfc9bc;
+  --t-900: #011a4b;
+  --t-700: #1d3260;
+  --t-600: #34486f;
+  --t-500: #45577a;
+  --t-400: #5a6a88;
+  --b-100: rgb(1 26 75 / 0.08);
+  --b-200: rgb(1 26 75 / 0.16);
+  --b-300: rgb(1 26 75 / 0.3);
+}
+.dark {
+  --paper: #010d26;
+  --surface: #061c45;
+  --ink: #f2efe8;
+  --muted: #a3b6d0;
+  --line: rgb(204 216 227 / 0.2);
+  --line-soft: rgb(204 216 227 / 0.1);
+  --data: #86abd4;
+  --signal: #ff6b60;
+  --action: #c81a13;
+  --n-50: #04163a;
+  --n-100: #0b2552;
+  --n-200: #13305f;
+  --n-300: #1b3d72;
+  --t-900: #f2efe8;
+  --t-700: #d5deea;
+  --t-600: #b9c7da;
+  --t-500: #a3b6d0;
+  --t-400: #8fa3bf;
+  --b-100: rgb(204 216 227 / 0.1);
+  --b-200: rgb(204 216 227 / 0.2);
+  --b-300: rgb(204 216 227 / 0.34);
+}
 
 html,
 body {
@@ -9,13 +61,10 @@ body {
 }
 
 body {
-  @apply text-slate-800 antialiased;
-  /* Fondo con un degradado muy sutil hacia el azul de marca. */
-  background:
-    radial-gradient(1200px 600px at 100% -10%, rgba(0, 59, 113, 0.08), transparent 60%),
-    radial-gradient(900px 500px at -10% 0%, rgba(1, 26, 75, 0.05), transparent 55%),
-    #eef1f7;
-  background-attachment: fixed;
+  @apply antialiased;
+  color: var(--t-900);
+  /* Papel plano: el color se reserva para los datos. */
+  background: var(--paper);
   letter-spacing: -0.011em;
 }
 
@@ -47,16 +96,9 @@ textarea,
   }
 }
 
-/* Efecto glass reutilizable (desenfoque de fondo). */
+/* "glass" (nombre histórico): ahora es una superficie plana, sin desenfoque. */
 .glass {
-  background-color: rgb(255 255 255 / 0.72);
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
-}
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass {
-    background-color: rgb(255 255 255 / 0.95);
-  }
+  background-color: var(--surface);
 }
 
 /* Aparición suave de tarjetas/secciones. */
@@ -109,59 +151,51 @@ textarea,
    toda la app de forma centralizada, conservando los acentos.
    ============================================================ */
 .dark body {
-  color: #e2e8f0;
-  /* Fondo inmersivo (estilo iData): navy profundo con glows suaves de marca. */
-  background:
-    radial-gradient(1100px 560px at 100% -8%, rgba(0, 59, 113, 0.42), transparent 58%),
-    radial-gradient(900px 520px at -8% 3%, rgba(1, 26, 75, 0.5), transparent 55%),
-    radial-gradient(760px 520px at 50% 112%, rgba(0, 59, 113, 0.22), transparent 60%),
-    #010f2e;
-  background-attachment: fixed;
+  background: var(--paper);
 }
 
-.dark .glass {
-  background-color: rgb(6 28 66 / 0.72);
-}
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .dark .glass {
-    background-color: #061c42;
-  }
-}
-
+/* ------------------------------------------------------------
+   Neutros centralizados (claro y oscuro): las utilidades slate/white
+   que usa toda la app apuntan a la familia papel/navy del rediseño.
+   ------------------------------------------------------------ */
 /* Superficies */
-.dark .bg-white { background-color: #111a2b; }
-.dark .bg-white\/95 { background-color: rgb(17 26 43 / 0.95); }
-.dark .bg-white\/90 { background-color: rgb(17 26 43 / 0.9); }
-.dark .bg-white\/80 { background-color: rgb(17 26 43 / 0.8); }
-.dark .bg-white\/60 { background-color: rgb(17 26 43 / 0.6); }
-.dark .bg-slate-50 { background-color: #0e1728; }
-.dark .bg-slate-50\/40 { background-color: rgb(14 23 40 / 0.5); }
-.dark .bg-slate-50\/50 { background-color: rgb(14 23 40 / 0.55); }
-.dark .bg-slate-50\/60 { background-color: rgb(14 23 40 / 0.6); }
-.dark .bg-slate-100 { background-color: #1c2740; }
-.dark .bg-slate-100\/80 { background-color: rgb(28 39 64 / 0.8); }
-.dark .bg-slate-200 { background-color: #263248; }
-.dark .bg-slate-300 { background-color: #3b4a63; }
+.bg-white { background-color: var(--surface); }
+.bg-white\/95 { background-color: color-mix(in srgb, var(--surface) 95%, transparent); }
+.bg-white\/90 { background-color: color-mix(in srgb, var(--surface) 90%, transparent); }
+.bg-white\/80 { background-color: color-mix(in srgb, var(--surface) 80%, transparent); }
+.bg-white\/60 { background-color: color-mix(in srgb, var(--surface) 60%, transparent); }
+.bg-slate-50 { background-color: var(--n-50); }
+.bg-slate-50\/40 { background-color: color-mix(in srgb, var(--n-50) 50%, transparent); }
+.bg-slate-50\/50 { background-color: color-mix(in srgb, var(--n-50) 55%, transparent); }
+.bg-slate-50\/60 { background-color: color-mix(in srgb, var(--n-50) 60%, transparent); }
+.bg-slate-100 { background-color: var(--n-100); }
+.bg-slate-100\/80 { background-color: color-mix(in srgb, var(--n-100) 80%, transparent); }
+.bg-slate-200 { background-color: var(--n-200); }
+.bg-slate-300 { background-color: var(--n-300); }
 
-/* Texto */
-.dark .text-slate-900 { color: #f1f5f9; }
-.dark .text-slate-800 { color: #e6edf6; }
-.dark .text-slate-700 { color: #cdd8e6; }
-.dark .text-slate-600 { color: #a7b6ca; }
-.dark .text-slate-500 { color: #91a1b8; }
-.dark .text-slate-400 { color: #7c8da4; }
+/* Texto: navy, nunca negro; los grises claros suben a contraste AA. */
+.text-slate-900, .text-slate-800 { color: var(--t-900); }
+.text-slate-700 { color: var(--t-700); }
+.text-slate-600 { color: var(--t-600); }
+.text-slate-500 { color: var(--t-500); }
+.text-slate-400 { color: var(--t-400); }
 
 /* Bordes y anillos */
-.dark .border-slate-100 { border-color: #1c2740; }
-.dark .border-slate-200 { border-color: #24304a; }
-.dark .border-slate-300 { border-color: #33415c; }
-.dark .border-slate-200\/70 { border-color: rgb(36 48 74 / 0.7); }
-.dark .border-white\/60 { border-color: rgb(255 255 255 / 0.07); }
-.dark .border-white\/70 { border-color: rgb(255 255 255 / 0.08); }
-.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #1c2740; }
-.dark .divide-slate-50 > :not([hidden]) ~ :not([hidden]) { border-color: #141d30; }
-.dark .ring-slate-200 { --tw-ring-color: #24304a; }
-.dark .ring-slate-900\/\[0\.03\] { --tw-ring-color: rgb(255 255 255 / 0.04); }
+.border-slate-100 { border-color: var(--b-100); }
+.border-slate-200 { border-color: var(--b-200); }
+.border-slate-300 { border-color: var(--b-300); }
+.border-slate-200\/70 { border-color: var(--b-200); }
+.border-white\/60, .border-white\/70 { border-color: var(--b-200); }
+.divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.divide-slate-50 > :not([hidden]) ~ :not([hidden]) { border-color: var(--b-100); }
+.ring-slate-200 { --tw-ring-color: var(--b-200); }
+.ring-slate-900\/\[0\.03\] { --tw-ring-color: transparent; }
+
+/* Geometría editorial: esquinas casi rectas y sin sombras decorativas. */
+.rounded-xl, .rounded-2xl { border-radius: 2px; }
+.rounded-lg { border-radius: 4px; }
+.shadow-card, .shadow-soft, .shadow-sm { box-shadow: none; }
+.hover\:shadow-soft:hover, .hover\:shadow-sm:hover { box-shadow: none; }
 
 /* Acentos de marca sobre fondo oscuro */
 .dark .bg-brand-50 { background-color: rgba(0, 59, 113, 0.24); }
@@ -203,14 +237,15 @@ textarea,
 .dark .border-l-amber-300 { border-left-color: rgba(251, 191, 36, 0.4); }
 
 /* Placeholders */
-.dark .placeholder\:text-slate-400::placeholder { color: #6b7c93; }
+.placeholder\:text-slate-400::placeholder { color: var(--t-400); }
 
 /* Hovers frecuentes */
-.dark .hover\:bg-slate-50:hover { background-color: #0e1728; }
-.dark .hover\:bg-slate-50\/50:hover { background-color: rgb(14 23 40 / 0.55); }
-.dark .hover\:bg-slate-100:hover { background-color: #1c2740; }
-.dark .hover\:bg-slate-200:hover { background-color: #263248; }
-.dark .hover\:bg-white:hover { background-color: #16203a; }
+.hover\:bg-slate-50:hover { background-color: var(--n-50); }
+.hover\:bg-slate-50\/50:hover { background-color: color-mix(in srgb, var(--n-50) 55%, transparent); }
+.hover\:bg-slate-50\/60:hover { background-color: color-mix(in srgb, var(--n-50) 60%, transparent); }
+.hover\:bg-slate-100:hover { background-color: var(--n-100); }
+.hover\:bg-slate-200:hover { background-color: var(--n-200); }
+.hover\:bg-white:hover { background-color: var(--surface); }
 
 /* Scrollbar oscuro */
 .dark * {

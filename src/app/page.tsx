@@ -57,7 +57,7 @@ export default function HomePage() {
     <div className="mx-auto max-w-4xl py-12 sm:py-16">
       <div className="max-w-2xl">
         <Eyebrow>Plataforma operativa · Pasteur</Eyebrow>
-        <h1 className="mt-4 text-4xl font-light leading-[1.03] tracking-tight text-slate-900 sm:text-6xl">
+        <h1 className="mt-4 text-4xl font-serif font-light leading-[1.03] tracking-tight text-ink sm:text-6xl">
           Plataforma de horarios de flota
         </h1>
         <p className="mt-4 max-w-xl text-lg leading-relaxed text-slate-600">
@@ -68,7 +68,7 @@ export default function HomePage() {
       <div className="mt-10 grid gap-4 sm:grid-cols-2">
         {entries.map((e) => (
           <Link key={e.href} href={e.href}>
-            <Card className="h-full p-6 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-pop">
+            <Card className="h-full p-6 transition-colors duration-300 hover:border-ink sm:p-8">
               <div className="flex items-start justify-between">
                 <span className={`grid h-12 w-12 place-items-center rounded-xl ${e.tint}`}>
                   {e.icon}
@@ -78,7 +78,7 @@ export default function HomePage() {
                   className="text-slate-300 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-brand-600"
                 />
               </div>
-              <h2 className="mt-4 text-lg font-semibold text-slate-900">{e.title}</h2>
+              <h2 className="mt-6 text-2xl font-serif font-normal tracking-tight text-ink">{e.title}</h2>
               <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{e.desc}</p>
               <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand-700">
                 Entrar <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-0.5" />

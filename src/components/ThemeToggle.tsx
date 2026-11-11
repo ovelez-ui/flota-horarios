@@ -32,7 +32,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-brand-700"
+      className="ed-barlink shrink-0 border border-white/25 px-0"
       title={dark ? "Modo claro" : "Modo oscuro"}
       aria-label={dark ? "Activar modo claro" : "Activar modo oscuro"}
     >
