@@ -1,8 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="7" fill="#084878"/>
-  <path d="M6 11h12v8H6z" fill="none" stroke="#fff" stroke-width="2"/>
-  <path d="M18 13h4l3 3v3h-7z" fill="none" stroke="#fff" stroke-width="2"/>
-  <circle cx="11" cy="21" r="2" fill="#fff"/>
-  <circle cx="21" cy="21" r="2" fill="#fff"/>
-  <rect x="23" y="9" width="3" height="3" rx="1" fill="#e2231a"/>
+  <!-- Última milla motorizada: moto de reparto con su caja (rojo Pasteur) sobre navy de marca. -->
+  <rect width="32" height="32" rx="7" fill="#011a4b"/>
+  <!-- Caja de reparto, apoyada en la parrilla trasera -->
+  <rect x="3.5" y="8" width="10.5" height="8.5" rx="1.5" fill="#e1251b"/>
+  <g fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Parrilla y asiento → estribo → columna de dirección -->
+    <path d="M5 18.5h10.5l1.5 4h4L22.5 9.5"/>
+    <!-- Manubrio -->
+    <path d="M19 9.5h5.5"/>
+    <!-- Horquilla delantera -->
+    <path d="M22.5 9.5l3 13.5"/>
+    <!-- Ruedas -->
+    <circle cx="9" cy="23.5" r="3.4" fill="#011a4b"/>
+    <circle cx="25" cy="23.5" r="3.4" fill="#011a4b"/>
+  </g>
 </svg>
