@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useMemo, useState, useRef, useEffect } from "react";
-import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2, ChevronDown, ChevronRight, Copy, Plus, Building2, Check } from "lucide-react";
+import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2, ChevronDown, ChevronRight, Copy, Plus, Building2, Check, Undo2 } from "lucide-react";
 import type { Driver, RuleViolation, Shift, ShiftKind } from "@/types";
 import { REST_CODE } from "@/types";
 import { Badge, Button, Card, CardContent, Eyebrow, Field, IconChip, Modal, Select } from "@/components/ui";
@@ -63,6 +63,8 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   const preview = useFleetStore((s) => s.preview);
   const assign = useFleetStore((s) => s.assign);
   const paint = useFleetStore((s) => s.paint);
+  const paintUndo = useFleetStore((s) => s.paintUndo);
+  const undoPaint = useFleetStore((s) => s.undoPaint);
   const rules = useFleetStore((s) => s.rules);
   const month = useFleetStore((s) => s.month);
   const copyPreviousMonth = useFleetStore((s) => s.copyPreviousMonth);
@@ -123,7 +125,40 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   // Modo pintar: pincel activo (código) y arrastre.
   const [brush, setBrush] = useState<string | null>(null);
   const [paintMsg, setPaintMsg] = useState<string | null>(null);
+  const [undoMsg, setUndoMsg] = useState<string | null>(null);
+  const [undoing, setUndoing] = useState(false);
   const painting = useRef(false);
+
+  // Paso atrás: revierte la última marcación (pincel o editor).
+  async function handleUndo() {
+    if (readOnly || undoing || paintUndo.length === 0) return;
+    setUndoing(true);
+    setPaintMsg(null);
+    const r = await undoPaint();
+    setUndoing(false);
+    if (r.ok) {
+      setUndoMsg(`Se deshizo ${r.label ?? "la última marcación"}${r.empty ? " (celda vaciada)" : ""}.`);
+    } else {
+      setUndoMsg(null);
+      setPaintMsg(r.error ?? "No se pudo deshacer.");
+    }
+  }
+
+  // Atajo Ctrl+Z / Cmd+Z (ignora cuando se escribe en un campo).
+  useEffect(() => {
+    if (readOnly) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const typing = t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName);
+      if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z") && !e.shiftKey && !typing) {
+        e.preventDefault();
+        void handleUndo();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readOnly, undoing, paintUndo.length]);
 
   // Crear un turno nuevo al vuelo desde la paleta.
   const [newCode, setNewCode] = useState("");
@@ -165,6 +200,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
     if (readOnly) return;
     if (brush) {
       setPaintMsg(null);
+      setUndoMsg(null);
       painting.current = true;
       void applyBrush(driver, date);
     } else {
@@ -420,6 +456,23 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
           <div className="mb-3 rounded-lg border border-slate-200 bg-slate-50/60 p-2.5">
             <div className="flex flex-wrap items-center gap-1.5">
               <button
+                onClick={handleUndo}
+                disabled={paintUndo.length === 0 || undoing}
+                className={cn(
+                  "flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold",
+                  paintUndo.length === 0 || undoing
+                    ? "cursor-not-allowed bg-white text-slate-300 ring-1 ring-slate-200"
+                    : "bg-white text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50",
+                )}
+                title="Deshacer la última marcación (Ctrl+Z)"
+              >
+                <Undo2 size={13} /> {undoing ? "Deshaciendo…" : "Deshacer"}
+                {paintUndo.length > 0 && (
+                  <span className="ml-0.5 rounded bg-brand-100 px-1 text-[10px] tabular-nums text-brand-700">{paintUndo.length}</span>
+                )}
+              </button>
+              <span className="mx-0.5 h-4 w-px bg-slate-300" aria-hidden />
+              <button
                 onClick={() => setBrush(null)}
                 className={cn(
                   "flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium",
@@ -474,6 +527,11 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
               )}
             </p>
             {paintMsg && <p className="mt-1 text-[11px] text-accent">⛔ {paintMsg}</p>}
+            {undoMsg && (
+              <p className="mt-1 flex items-center gap-1 text-[11px] text-emerald-700">
+                <Undo2 size={12} /> {undoMsg}
+              </p>
+            )}
           </div>
         )}
 

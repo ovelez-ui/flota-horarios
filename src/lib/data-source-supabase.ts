@@ -158,6 +158,11 @@ export const supabaseSource = {
       ? { ok: false, violations: [], shift: undefined as Shift | undefined, error: error.message }
       : { ok: true, violations: [], shift };
   },
+  // --- Borrado de una celda (para "deshacer" cuando antes estaba vacía) ---
+  async removeShift(driverId: string, date: string): Promise<{ ok: boolean; error?: string }> {
+    const { error } = await getSupabase().from("shifts").delete().eq("driver_id", driverId).eq("date", date);
+    return error ? { ok: false, error: error.message } : { ok: true };
+  },
   async assignRange(input: { driverId: string; from: string; to: string; code: string }) {
     const dates = datesBetween(input.from, input.to);
     const shifts = dates.map((date) => buildShift({

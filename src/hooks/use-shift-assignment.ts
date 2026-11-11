@@ -119,6 +119,12 @@ interface FleetState {
   assignRange: (input: { driverId: string; from: string; to: string; code: string }) => Promise<MutationResult & { count?: number }>;
   setRules: (partial: Partial<AssignmentRules>) => void;
 
+  // --- Deshacer ("paso atrás") de marcaciones del calendario ---
+  /** Historial de celdas modificadas (celda → estado anterior). No se persiste. */
+  paintUndo: { driverId: string; date: string; prev: Shift | null }[];
+  /** Revierte la última marcación (pincel o editor) a su estado anterior. */
+  undoPaint: () => Promise<{ ok: boolean; error?: string; empty?: boolean; label?: string }>;
+
   // --- Catálogo de turnos especiales (admin de horarios) ---
   customShiftCodes: string[];
   addShiftCode: (code: string) => { ok: boolean; error?: string; code?: string };
@@ -140,6 +146,16 @@ interface FleetState {
 
 let bootstrapping: Promise<void> | null = null;
 
+/** Límite de pasos de deshacer en memoria. */
+const UNDO_LIMIT = 50;
+type PaintUndoEntry = { driverId: string; date: string; prev: Shift | null };
+
+/** Apila una entrada de deshacer, recortando al límite. */
+function pushUndo(stack: PaintUndoEntry[], entry: PaintUndoEntry): PaintUndoEntry[] {
+  const next = [...stack, entry];
+  return next.length > UNDO_LIMIT ? next.slice(next.length - UNDO_LIMIT) : next;
+}
+
 export const useFleetStore = create<FleetState>((set, get) => ({
   zones: [],
   pointsOfSale: [],
@@ -148,6 +164,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
   rules: loadRules(),
   month: DEFAULT_MONTH,
   customShiftCodes: loadCustomCodes(),
+  paintUndo: [],
   ready: false,
   loading: false,
   error: null,
@@ -297,6 +314,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
     const local = get().preview(input);
     if (!local.ok) return { ok: false, violations: local.violations };
 
+    const prev = get().shifts.find((s) => s.driverId === input.driverId && s.date === input.date) ?? null;
     const res = await source.assignShift(input);
     if (res.ok && res.shift) {
       const shift = res.shift;
@@ -305,6 +323,7 @@ export const useFleetStore = create<FleetState>((set, get) => ({
           ...state.shifts.filter((s) => !(s.driverId === shift.driverId && s.date === shift.date)),
           shift,
         ],
+        paintUndo: pushUndo(state.paintUndo, { driverId: shift.driverId, date: shift.date, prev }),
       }));
     }
     return { ok: res.ok, violations: res.violations.length ? res.violations : local.violations, error: res.error };
@@ -315,20 +334,60 @@ export const useFleetStore = create<FleetState>((set, get) => ({
     if (!local.ok) return { ok: false, violations: local.violations };
 
     const candidate = buildShift({ ...input, weekday: input.weekday || weekdayName(input.date) });
-    const prev = get().shifts.find((s) => s.driverId === candidate.driverId && s.date === candidate.date);
-    // Optimista: pinta la celda de inmediato.
+    const prev = get().shifts.find((s) => s.driverId === candidate.driverId && s.date === candidate.date) ?? null;
+    const undoEntry: PaintUndoEntry = { driverId: candidate.driverId, date: candidate.date, prev };
+    // Optimista: pinta la celda de inmediato y registra el estado anterior para deshacer.
     set((state) => ({
       shifts: [...state.shifts.filter((s) => !(s.driverId === candidate.driverId && s.date === candidate.date)), candidate],
+      paintUndo: pushUndo(state.paintUndo, undoEntry),
     }));
 
     const res = await source.assignShift(input);
     if (!res.ok) {
-      // Revertir si el backend rechaza.
+      // Revertir si el backend rechaza (y quitar exactamente la entrada recién añadida).
       set((state) => ({
         shifts: [...state.shifts.filter((s) => !(s.driverId === candidate.driverId && s.date === candidate.date)), ...(prev ? [prev] : [])],
+        paintUndo: state.paintUndo.filter((e) => e !== undoEntry),
       }));
     }
     return { ok: res.ok, violations: local.violations, error: res.error };
+  },
+
+  undoPaint: async () => {
+    const stack = get().paintUndo;
+    const last = stack[stack.length - 1];
+    if (!last) return { ok: false, error: "No hay marcaciones para deshacer." };
+
+    const driver = get().drivers.find((d) => d.id === last.driverId);
+    const label = `${driver?.name ?? last.driverId} · ${last.date}`;
+
+    // Restaura el estado anterior de inmediato (optimista) y descarta la entrada.
+    set((state) => ({
+      shifts: [
+        ...state.shifts.filter((s) => !(s.driverId === last.driverId && s.date === last.date)),
+        ...(last.prev ? [last.prev] : []),
+      ],
+      paintUndo: state.paintUndo.slice(0, -1),
+    }));
+
+    // Persiste la reversión en el backend.
+    const res = last.prev
+      ? await source.assignShift({
+          driverId: last.prev.driverId,
+          date: last.prev.date,
+          weekday: last.prev.weekday,
+          code: last.prev.code,
+          zoneId: last.prev.zoneId,
+          pointOfSaleId: last.prev.pointOfSaleId,
+        })
+      : await source.removeShift(last.driverId, last.date);
+
+    if (!res.ok) {
+      // Falló la persistencia: devuelve la entrada a la pila para reintentar.
+      set((state) => ({ paintUndo: [...state.paintUndo, last] }));
+      return { ok: false, error: res.error ?? "No se pudo deshacer en el servidor.", label };
+    }
+    return { ok: true, empty: !last.prev, label };
   },
 
   assignRange: async (input) => {

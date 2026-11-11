@@ -125,6 +125,15 @@ export const api = {
     return { ok: true, count };
   },
 
+  // --- Borrado de una celda (para "deshacer" cuando antes estaba vacía) ---
+  async removeShift(driverId: string, date: string): Promise<{ ok: boolean; error?: string }> {
+    const { ok, data } = await req<{ ok?: boolean; error?: string }>(
+      "/api/shifts",
+      { method: "DELETE", body: JSON.stringify({ driverId, date }) },
+    );
+    return { ok, error: ok ? undefined : errorOf(data, "No se pudo borrar el turno.") };
+  },
+
   // --- Asignación ---
   async assignShift(body: BuildShiftInput) {
     const { ok, data } = await req<{ ok?: boolean; violations?: RuleViolation[]; shift?: Shift; error?: string }>(
