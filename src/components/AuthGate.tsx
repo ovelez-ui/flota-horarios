@@ -5,6 +5,7 @@ import { ArrowUpRight, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Field, Input } from "@/components/ui";
 import { Magnetic } from "@/components/ui/motion";
+import { RouteField } from "@/components/RouteField";
 
 /**
  * Acceso: composición asimétrica 7/5. A la izquierda el nombre del producto
@@ -25,6 +26,7 @@ function LoginForm() {
 
   return (
     <div className={`grid min-h-[78vh] items-center gap-12 py-8 lg:grid-cols-[7fr_5fr] lg:gap-20 lg:px-[2.5vw] ${ready ? "ed-ready" : ""}`}>
+      <RouteField />
       <div className="min-w-0">
         <p className="ed-eyebrow ed-rise">Acceso operativo · Farmacias Pasteur</p>
         <h1 className="ed-rise mt-5 font-serif text-[clamp(3.5rem,11vw,9.5rem)] font-light leading-[0.86] tracking-[-0.04em] text-ink" style={{ "--i": 1 } as React.CSSProperties}>
@@ -38,7 +40,7 @@ function LoginForm() {
       </div>
 
       <form
-        className="ed-rise w-full max-w-md justify-self-start border-t border-ink pt-6 lg:justify-self-end"
+        className="ed-rise w-full max-w-md justify-self-start border-t border-ink bg-paper pt-6 lg:justify-self-end lg:px-8 lg:pb-8"
         style={{ "--i": 3 } as React.CSSProperties}
         aria-labelledby="login-title"
         onSubmit={(e) => {
