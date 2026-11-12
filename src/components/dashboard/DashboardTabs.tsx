@@ -171,7 +171,7 @@ export function DashboardTabs({ readOnly = false }: { readOnly?: boolean }) {
           {tab === "repartidores" && <DriversSheet />}
           {tab === "analitica" && <Analytics />}
           {tab === "cobertura" && <CoverageBoard />}
-          {tab === "calendario" && <ScheduleCalendar readOnly={readOnly} />}
+          {tab === "calendario" && <ScheduleCalendar readOnly={readOnly} monthSwitcher={false} />}
           {tab === "asignar" && <Section readOnly={readOnly}><AssignmentPanel /></Section>}
           {tab === "vacaciones" && <Section readOnly={readOnly}><VacationPanel /></Section>}
           {tab === "horarios" && <Section readOnly={readOnly}><ShiftTypesAdmin /></Section>}
