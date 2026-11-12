@@ -1,10 +1,10 @@
 "use client";
 
 import { Fragment, useMemo, useState, useRef, useEffect } from "react";
-import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2, ChevronDown, ChevronRight, Copy, Plus, Building2, Check, Undo2 } from "lucide-react";
+import { CalendarDays, AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2, ChevronDown, ChevronRight, Copy, Plus, Building2, Check, Undo2, Eraser, StickyNote, ArrowRightLeft } from "lucide-react";
 import type { Driver, RuleViolation, Shift, ShiftKind } from "@/types";
 import { REST_CODE } from "@/types";
-import { Badge, Button, Card, CardContent, Eyebrow, Field, IconChip, Modal, Select } from "@/components/ui";
+import { Badge, Button, Card, CardContent, Eyebrow, Field, IconChip, Input, Modal, Select } from "@/components/ui";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import { MONTHS } from "@/lib/month";
 import { MonthSwitcher } from "./MonthSwitcher";
@@ -47,13 +47,19 @@ function cellLabel(shift: Shift): string {
 
 // Ancho mínimo de columna de día: suficiente para "08-15" (compacto para que quepa el mes).
 const COL_MIN = 34;
-// Ancho fijo de la primera columna (nombre del repartidor).
-const NAME_COL = 180;
+// Ancho fijo de la primera columna (nombre del repartidor / tienda).
+const NAME_COL = 240;
+// Valor de pincel especial para borrar (vaciar) una celda.
+const ERASE = "__ERASE__";
 
 interface EditState {
   driver: Driver;
   date: string;
   code: string;
+  /** Tienda que cubre ese día (por defecto la base del repartidor). */
+  posId: string;
+  /** Nota libre del día (supernumerario, etc.). */
+  note: string;
 }
 
 /** Malla mensual tipo Gantt. `readOnly` desactiva la edición (vista tiendas). */
@@ -67,6 +73,7 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   const paint = useFleetStore((s) => s.paint);
   const paintUndo = useFleetStore((s) => s.paintUndo);
   const undoPaint = useFleetStore((s) => s.undoPaint);
+  const clearCell = useFleetStore((s) => s.clearCell);
   const rules = useFleetStore((s) => s.rules);
   const month = useFleetStore((s) => s.month);
   const copyPreviousMonth = useFleetStore((s) => s.copyPreviousMonth);
@@ -184,6 +191,11 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
 
   async function applyBrush(driver: Driver, date: string) {
     if (readOnly || !brush) return;
+    if (brush === ERASE) {
+      const r = await clearCell({ driverId: driver.id, date });
+      if (!r.ok) setPaintMsg(`${driver.name} · ${shortLabel(date)}: ${r.error ?? "no se pudo vaciar"}`);
+      return;
+    }
     const r = await paint({
       driverId: driver.id,
       date,
@@ -293,7 +305,13 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
   function openEdit(driver: Driver, date: string, shift: Shift | undefined) {
     if (readOnly) return;
     setServerError(null);
-    setEdit({ driver, date, code: shift ? shift.code : REST_CODE });
+    setEdit({
+      driver,
+      date,
+      code: shift ? shift.code : REST_CODE,
+      posId: shift?.pointOfSaleId ?? driver.basePointOfSaleId,
+      note: shift?.note ?? "",
+    });
   }
 
   // Validación local en vivo del turno en edición.
@@ -314,17 +332,31 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
     if (!edit) return;
     setSaving(true);
     setServerError(null);
+    const pos = pointsOfSale.find((p) => p.id === edit.posId);
     const r = await assign({
       driverId: edit.driver.id,
       date: edit.date,
       weekday: weekdayName(edit.date),
       code: edit.code,
-      zoneId: edit.driver.zoneId,
-      pointOfSaleId: edit.driver.basePointOfSaleId,
+      // La tienda cubierta ese día (puede ser otra si es supernumerario).
+      zoneId: pos?.zoneId ?? edit.driver.zoneId,
+      pointOfSaleId: edit.posId || edit.driver.basePointOfSaleId,
+      note: edit.note,
     });
     setSaving(false);
     if (r.ok) setEdit(null);
     else setServerError(r.error ?? "El servidor rechazó la asignación.");
+  }
+
+  // Vaciar la celda en edición (volver a blanco).
+  async function clearFromEditor() {
+    if (!edit) return;
+    setSaving(true);
+    setServerError(null);
+    const r = await clearCell({ driverId: edit.driver.id, date: edit.date });
+    setSaving(false);
+    if (r.ok) setEdit(null);
+    else setServerError(r.error ?? "No se pudo vaciar la celda.");
   }
 
   return (
@@ -501,6 +533,18 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
                 </button>
               ))}
 
+              {/* Borrador: vacía la celda (vuelve a blanco) */}
+              <button
+                onClick={() => setBrush(ERASE)}
+                className={cn(
+                  "flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold ring-1 ring-slate-300",
+                  brush === ERASE ? "bg-rose-600 text-white ring-rose-600 ring-offset-1" : "bg-white text-slate-600 hover:bg-rose-50",
+                )}
+                title="Borrador: pinta para vaciar la celda (volver a blanco)"
+              >
+                <Eraser size={13} /> Borrar
+              </button>
+
               {/* Crear un turno nuevo al vuelo */}
               <span className="mx-1 h-4 w-px bg-slate-300" aria-hidden />
               <input
@@ -522,7 +566,9 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
             </div>
             {newCodeErr && <p className="mt-1.5 text-[11px] text-accent">{newCodeErr}</p>}
             <p className="mt-2 flex items-center gap-1 text-[11px] text-slate-400">
-              {brush ? (
+              {brush === ERASE ? (
+                <>Borrando <strong className="mx-1 text-rose-600">(vaciar celda)</strong> — clic o arrastra sobre las celdas.</>
+              ) : brush ? (
                 <>Pintando <strong className="mx-1 text-slate-600">{codeLabel(brush)}</strong> — clic o arrastra sobre las celdas.</>
               ) : (
                 <>Elige un pincel para asignar rápido, crea un turno nuevo con “Nuevo turno”, o clic en una celda para editar con detalle.</>
@@ -613,10 +659,9 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
                 <Fragment key={g.id}>
                   <tr>
                     <td className="sticky left-0 z-10 border-y border-r border-slate-200 bg-slate-100 px-2 py-1.5 sm:px-3">
-                      <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
-                        <Building2 size={12} className="shrink-0 text-slate-400" />
-                        <span className="truncate" title={g.name}>{g.name}</span>
-                        <span className="font-normal text-slate-400">· {g.drivers.length}</span>
+                      <span className="flex items-start gap-1.5 text-[11px] font-semibold uppercase leading-tight tracking-wide text-slate-600">
+                        <Building2 size={12} className="mt-0.5 shrink-0 text-slate-400" />
+                        <span title={g.name}>{g.name} <span className="font-normal text-slate-400">· {g.drivers.length}</span></span>
                       </span>
                     </td>
                     <td colSpan={visibleDates.length} className="border-y border-slate-200 bg-slate-50" />
@@ -626,11 +671,11 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
                     return (
                   <tr key={driver.id} className="hover:bg-slate-50/50">
                     <td
-                      className="sticky left-0 z-10 max-w-[130px] border-b border-r border-slate-100 bg-white px-2 py-1.5 sm:max-w-[170px] sm:px-3"
+                      className="sticky left-0 z-10 border-b border-r border-slate-100 bg-white px-2 py-1.5 sm:px-3"
                       title={`${driver.name} · C.C. ${driver.id}`}
                     >
-                      <div className="truncate font-medium text-slate-700">{driver.name}</div>
-                      <div className="truncate text-[10px] leading-tight tabular-nums text-slate-400">
+                      <div className="font-medium leading-tight text-slate-700">{driver.name}</div>
+                      <div className="text-[10px] leading-tight tabular-nums text-slate-400">
                         C.C. {driver.id}
                       </div>
                     </td>
@@ -638,6 +683,13 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
                       const s = m?.get(d);
                       const special = s ? specialMeta(s.code) : undefined;
                       const hol = isHoliday(d);
+                      const altStore = !!(s && s.pointOfSaleId && s.pointOfSaleId !== driver.basePointOfSaleId);
+                      const hasNote = !!(s && s.note);
+                      const marked = altStore || hasNote;
+                      const titleExtra = s
+                        ? (altStore ? ` · → ${posNameById.get(s.pointOfSaleId!) ?? "otra tienda"}` : "") +
+                          (hasNote ? ` · 📝 ${s.note}` : "")
+                        : "";
                       return (
                         <td
                           key={d}
@@ -646,15 +698,25 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
                             if (painting.current && brush) void applyBrush(driver, d);
                           }}
                           className={cn(
-                            "select-none border-b border-l border-slate-100 px-0.5 text-center text-[10px] font-semibold tabular-nums transition",
+                            "relative select-none border-b border-l border-slate-100 px-0.5 text-center text-[10px] font-semibold tabular-nums transition",
                             !readOnly && (brush ? "cursor-crosshair" : "cursor-pointer"),
                             !readOnly && "hover:ring-2 hover:ring-inset hover:ring-brand-400",
                             cellClass(s),
                             hol && "border-l-2 border-l-amber-300",
+                            marked && "ring-1 ring-inset ring-brand-500/60",
                           )}
                           style={{ minWidth: COL_MIN, height: 28 }}
-                          title={s ? `${driver.name} · ${d} · ${special ? special.label : `${s.code} (${s.hours}h)`}` : d}
+                          title={s ? `${driver.name} · ${d} · ${special ? special.label : `${s.code} (${s.hours}h)`}${titleExtra}` : d}
                         >
+                          {marked && (
+                            <span
+                              aria-hidden
+                              className={cn(
+                                "absolute right-0 top-0 h-0 w-0 border-l-[7px] border-t-[7px] border-l-transparent",
+                                altStore ? "border-t-brand-600" : "border-t-amber-500",
+                              )}
+                            />
+                          )}
                           {s ? cellLabel(s) : ""}
                         </td>
                       );
@@ -715,6 +777,12 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
           <span className="flex items-center gap-1.5">
             <AlertTriangle size={14} className="text-accent" /> Día sin cobertura (0)
           </span>
+          <span className="flex items-center gap-1.5">
+            <span className="relative inline-block h-3 w-3 rounded-sm bg-slate-100 ring-1 ring-inset ring-brand-500/60">
+              <span className="absolute right-0 top-0 h-0 w-0 border-l-[6px] border-t-[6px] border-l-transparent border-t-brand-600" />
+            </span>
+            Cubre otra tienda / nota
+          </span>
         </div>
       </CardContent>
 
@@ -762,6 +830,33 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
               </Select>
             </Field>
 
+            {/* Supernumerario: tienda que cubre ese día (si va a otra) */}
+            <Field label="Tienda que cubre ese día">
+              <Select value={edit.posId} onChange={(e) => setEdit({ ...edit, posId: e.target.value })}>
+                {[...pointsOfSale]
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}{p.id === edit.driver.basePointOfSaleId ? " (base)" : ""}
+                    </option>
+                  ))}
+              </Select>
+              {edit.posId !== edit.driver.basePointOfSaleId && (
+                <p className="mt-1 flex items-center gap-1 text-[11px] text-brand-700">
+                  <ArrowRightLeft size={12} /> Supernumerario: cubre otra tienda este día.
+                </p>
+              )}
+            </Field>
+
+            <Field label="Nota (opcional)">
+              <Input
+                value={edit.note}
+                onChange={(e) => setEdit({ ...edit, note: e.target.value })}
+                placeholder="Ej. Apoya Vegas Plaza por la tarde"
+                maxLength={160}
+              />
+            </Field>
+
             {previewResult && previewResult.violations.length > 0 ? (
               <ul className="space-y-1.5 rounded-lg border border-slate-100 bg-white p-3">
                 {previewResult.violations.map((v, i) => (
@@ -776,11 +871,22 @@ export function ScheduleCalendar({ readOnly = false }: { readOnly?: boolean }) {
 
             {serverError && <p className="text-sm text-accent">{serverError}</p>}
 
-            <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" onClick={() => setEdit(null)}>Cancelar</Button>
-              <Button onClick={save} disabled={saving || !previewResult?.ok}>
-                {saving ? "Guardando…" : previewResult?.ok ? "Guardar" : "Bloqueado por reglas"}
-              </Button>
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <button
+                type="button"
+                onClick={clearFromEditor}
+                disabled={saving}
+                className="flex items-center gap-1 rounded-lg px-2.5 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-40"
+                title="Vaciar la celda (volver a blanco)"
+              >
+                <Eraser size={15} /> Vaciar
+              </button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setEdit(null)}>Cancelar</Button>
+                <Button onClick={save} disabled={saving || !previewResult?.ok}>
+                  {saving ? "Guardando…" : previewResult?.ok ? "Guardar" : "Bloqueado por reglas"}
+                </Button>
+              </div>
             </div>
           </div>
         )}

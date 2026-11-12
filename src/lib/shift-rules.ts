@@ -348,6 +348,7 @@ export interface BuildShiftInput {
   code: string;
   pointOfSaleId?: string;
   zoneId?: string;
+  note?: string;
 }
 
 export function buildShift(input: BuildShiftInput): Shift {
@@ -363,6 +364,7 @@ export function buildShift(input: BuildShiftInput): Shift {
     hours: def.hours,
     pointOfSaleId: input.pointOfSaleId,
     zoneId: input.zoneId,
+    note: input.note?.trim() ? input.note.trim() : undefined,
   };
 }
 

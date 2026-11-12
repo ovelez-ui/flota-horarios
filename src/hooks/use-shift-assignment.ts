@@ -124,6 +124,8 @@ interface FleetState {
   paintUndo: { driverId: string; date: string; prev: Shift | null }[];
   /** Revierte la última marcación (pincel o editor) a su estado anterior. */
   undoPaint: () => Promise<{ ok: boolean; error?: string; empty?: boolean; label?: string }>;
+  /** Vacía una celda (borra el turno del día) y registra el paso para deshacer. */
+  clearCell: (input: { driverId: string; date: string }) => Promise<{ ok: boolean; error?: string }>;
 
   // --- Catálogo de turnos especiales (admin de horarios) ---
   customShiftCodes: string[];
@@ -351,6 +353,26 @@ export const useFleetStore = create<FleetState>((set, get) => ({
       }));
     }
     return { ok: res.ok, violations: local.violations, error: res.error };
+  },
+
+  clearCell: async ({ driverId, date }) => {
+    const prev = get().shifts.find((s) => s.driverId === driverId && s.date === date) ?? null;
+    if (!prev) return { ok: true }; // ya estaba vacía
+    const undoEntry: PaintUndoEntry = { driverId, date, prev };
+    // Optimista: vacía la celda y registra el estado anterior para deshacer.
+    set((state) => ({
+      shifts: state.shifts.filter((s) => !(s.driverId === driverId && s.date === date)),
+      paintUndo: pushUndo(state.paintUndo, undoEntry),
+    }));
+    const res = await source.removeShift(driverId, date);
+    if (!res.ok) {
+      // Falló el borrado: restaura la celda y quita la entrada de deshacer.
+      set((state) => ({
+        shifts: [...state.shifts.filter((s) => !(s.driverId === driverId && s.date === date)), prev],
+        paintUndo: state.paintUndo.filter((e) => e !== undoEntry),
+      }));
+    }
+    return { ok: res.ok, error: res.error };
   },
 
   undoPaint: async () => {

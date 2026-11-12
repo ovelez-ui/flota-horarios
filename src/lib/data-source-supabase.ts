@@ -14,12 +14,18 @@ import { slugify } from "@/lib/utils";
 const toZone = (r: any): Zone => ({ id: r.id, code: r.code, name: r.name, city: r.city, color: r.color });
 const toPos = (r: any): PointOfSale => ({ id: r.id, name: r.name, zoneId: r.zone_id, address: r.address ?? undefined, minDriversPerShift: r.min_drivers });
 const toDriver = (r: any): Driver => ({ id: r.id, name: r.name, basePointOfSaleId: r.base_pos_id, zoneId: r.zone_id, status: r.status, monthlyHourCap: r.monthly_cap, phone: r.phone ?? undefined });
-const toShift = (r: any): SeedShift => ({ id: r.id, driverId: r.driver_id, date: r.date, weekday: r.weekday, code: r.code, start: r.start_h, end: r.end_h, hours: r.hours, kind: r.kind, pointOfSaleId: r.pos_id ?? undefined, zoneId: r.zone_id ?? undefined });
+const toShift = (r: any): SeedShift => ({ id: r.id, driverId: r.driver_id, date: r.date, weekday: r.weekday, code: r.code, start: r.start_h, end: r.end_h, hours: r.hours, kind: r.kind, pointOfSaleId: r.pos_id ?? undefined, zoneId: r.zone_id ?? undefined, note: r.note ?? undefined });
 
 const zoneRow = (z: Zone) => ({ id: z.id, code: z.code, name: z.name, city: z.city, color: z.color });
 const posRow = (p: PointOfSale) => ({ id: p.id, name: p.name, zone_id: p.zoneId, address: p.address ?? null, min_drivers: p.minDriversPerShift });
 const driverRow = (d: Driver) => ({ id: d.id, name: d.name, base_pos_id: d.basePointOfSaleId, zone_id: d.zoneId, status: d.status, monthly_cap: d.monthlyHourCap, phone: d.phone ?? null });
-const shiftRow = (s: Shift) => ({ id: s.id, driver_id: s.driverId, date: s.date, weekday: s.weekday, code: s.code, start_h: s.start, end_h: s.end, hours: s.hours, kind: shiftKind(s), pos_id: s.pointOfSaleId ?? null, zone_id: s.zoneId ?? null });
+const shiftRow = (s: Shift) => {
+  const row: Record<string, unknown> = { id: s.id, driver_id: s.driverId, date: s.date, weekday: s.weekday, code: s.code, start_h: s.start, end_h: s.end, hours: s.hours, kind: shiftKind(s), pos_id: s.pointOfSaleId ?? null, zone_id: s.zoneId ?? null };
+  // Solo se incluye `note` cuando tiene contenido: así el guardado funciona
+  // aunque la columna `note` aún no exista en la base (ver migración SQL).
+  if (s.note != null && s.note !== "") row.note = s.note;
+  return row;
+};
 
 /**
  * Trae todas las filas de una tabla paginando (PostgREST limita a ~1000).

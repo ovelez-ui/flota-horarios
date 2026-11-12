@@ -40,13 +40,23 @@ function connect(): DatabaseSync {
     );
     CREATE TABLE IF NOT EXISTS shifts (
       id TEXT PRIMARY KEY, driver_id TEXT, date TEXT, weekday TEXT, code TEXT,
-      start REAL, "end" REAL, hours REAL, kind TEXT, pos_id TEXT, zone_id TEXT,
+      start REAL, "end" REAL, hours REAL, kind TEXT, pos_id TEXT, zone_id TEXT, note TEXT,
       UNIQUE(driver_id, date)
     );
     CREATE INDEX IF NOT EXISTS idx_shifts_driver ON shifts(driver_id);
     CREATE INDEX IF NOT EXISTS idx_shifts_date ON shifts(date);
     CREATE INDEX IF NOT EXISTS idx_shifts_zone ON shifts(zone_id);
   `);
+
+  // Migración: agrega la columna `note` en BDs creadas antes de esta versión.
+  try {
+    const cols = database.prepare("PRAGMA table_info(shifts)").all() as { name: string }[];
+    if (!cols.some((c) => c.name === "note")) {
+      database.exec('ALTER TABLE shifts ADD COLUMN note TEXT');
+    }
+  } catch {
+    /* ignora: la tabla recién creada ya incluye la columna */
+  }
 
   db = database;
   seedIfEmpty();
@@ -98,7 +108,7 @@ const toDriver = (r: any): Driver => ({
 const toShift = (r: any): SeedShift => ({
   id: r.id, driverId: r.driver_id, date: r.date, weekday: r.weekday, code: r.code,
   start: r.start, end: r.end, hours: r.hours, kind: r.kind,
-  pointOfSaleId: r.pos_id ?? undefined, zoneId: r.zone_id ?? undefined,
+  pointOfSaleId: r.pos_id ?? undefined, zoneId: r.zone_id ?? undefined, note: r.note ?? undefined,
 });
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -194,13 +204,17 @@ export const repo = {
 
   // --- Turnos ---
   upsertShift(s: Shift): void {
-    connect().prepare(`INSERT INTO shifts (id,driver_id,date,weekday,code,start,"end",hours,kind,pos_id,zone_id)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    connect().prepare(`INSERT INTO shifts (id,driver_id,date,weekday,code,start,"end",hours,kind,pos_id,zone_id,note)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(driver_id,date) DO UPDATE SET
         code=excluded.code, weekday=excluded.weekday, start=excluded.start,
         "end"=excluded."end", hours=excluded.hours, kind=excluded.kind,
-        pos_id=excluded.pos_id, zone_id=excluded.zone_id`)
+        pos_id=excluded.pos_id, zone_id=excluded.zone_id, note=excluded.note`)
       .run(s.id, s.driverId, s.date, s.weekday, s.code, s.start, s.end, s.hours,
-        (s as SeedShift).kind ?? shiftKind(s), s.pointOfSaleId ?? null, s.zoneId ?? null);
+        (s as SeedShift).kind ?? shiftKind(s), s.pointOfSaleId ?? null, s.zoneId ?? null, s.note ?? null);
+  },
+
+  removeShift(driverId: string, date: string): void {
+    connect().prepare("DELETE FROM shifts WHERE driver_id = ? AND date = ?").run(driverId, date);
   },
 };

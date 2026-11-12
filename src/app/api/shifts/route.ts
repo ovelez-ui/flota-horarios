@@ -47,3 +47,13 @@ export async function POST(req: Request) {
   repo.upsertShift(candidate);
   return NextResponse.json({ ok: true, violations, shift: candidate });
 }
+
+/** DELETE /api/shifts — vacía una celda (borra el turno de ese día). */
+export async function DELETE(req: Request) {
+  const { driverId, date } = (await req.json()) as { driverId?: string; date?: string };
+  if (!driverId || !date) {
+    return NextResponse.json({ ok: false, error: "Falta driverId o date." }, { status: 400 });
+  }
+  repo.removeShift(driverId, date);
+  return NextResponse.json({ ok: true });
+}

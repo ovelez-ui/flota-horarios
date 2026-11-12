@@ -78,6 +78,8 @@ export interface Shift {
   /** Base/punto de venta cubierto (por defecto la base del repartidor). */
   pointOfSaleId?: PointOfSaleId;
   zoneId?: ZoneId;
+  /** Nota libre del día (ej. supernumerario que cubre otra tienda). */
+  note?: string;
 }
 
 // ---------------------------------------------------------------------------
