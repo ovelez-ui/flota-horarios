@@ -12,7 +12,7 @@ export function MonthSwitcher({ className }: { className?: string }) {
   const loading = useFleetStore((s) => s.loading);
 
   return (
-    <div className={cn("inline-flex items-center gap-0.5 rounded-full border border-line p-0.5", className)} role="group" aria-label="Mes de planificación">
+    <div className={cn("ed-noscroll inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full border border-line p-0.5", className)} role="group" aria-label="Mes de planificación">
       <CalendarRange size={15} className="ml-2 mr-1 shrink-0 text-muted" aria-hidden />
       {MONTHS.map((m) => {
         const active = m.prefix === month.prefix;
@@ -24,7 +24,7 @@ export function MonthSwitcher({ className }: { className?: string }) {
             onClick={() => void setMonth(m.prefix)}
             aria-pressed={active}
             className={cn(
-              "min-h-[36px] rounded-full px-3 text-xs font-bold disabled:opacity-60",
+              "min-h-[36px] shrink-0 rounded-full px-3 text-xs font-bold disabled:opacity-60",
               active ? "bg-ink text-paper" : "text-muted hover:text-ink",
             )}
             title={`Planificar ${m.label}`}

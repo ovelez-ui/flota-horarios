@@ -109,7 +109,7 @@ export function DashboardTabs({ readOnly = false }: { readOnly?: boolean }) {
       {/* Sub-barra: 5 grupos arriba; debajo, solo las secciones del grupo activo. */}
       <div className="ed-subbar -mx-4 -mt-6 mb-6 px-4 2xl:-mx-6 2xl:px-6">
         <div className="flex items-center gap-3">
-          <nav className="flex min-w-0 flex-1 overflow-x-auto" aria-label="Grupos de secciones">
+          <nav className="ed-noscroll flex min-w-0 flex-1 overflow-x-auto" aria-label="Grupos de secciones">
             {GROUPS.map((g) => (
               <button
                 key={g.label}
@@ -144,7 +144,7 @@ export function DashboardTabs({ readOnly = false }: { readOnly?: boolean }) {
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-t border-line-soft py-1">
-          <nav className="flex min-w-0 gap-5 overflow-x-auto" aria-label={`Secciones de ${activeGroup.label}`}>
+          <nav className="ed-noscroll flex min-w-0 gap-5 overflow-x-auto" aria-label={`Secciones de ${activeGroup.label}`}>
             {activeGroup.items.map((t) => (
               <button
                 key={t.id}

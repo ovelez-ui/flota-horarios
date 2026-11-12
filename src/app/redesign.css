@@ -180,6 +180,14 @@
   transform: none;
 }
 
+/* Navegación desplazable sin barra visible (el contenido recortado ya indica que hay más). */
+.ed-noscroll {
+  scrollbar-width: none;
+}
+.ed-noscroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* --- Paleta de comandos --- */
 dialog.ed-cmd {
   width: min(40rem, calc(100vw - 2rem));
@@ -398,8 +406,15 @@ dialog.ed-cmd::backdrop {
 .ed-hours .is-next i {
   opacity: 0.7;
 }
-.ed-hours .is-now i {
+.ed-hours .is-now i,
+.ed-hours .is-gap i {
   background: var(--signal);
+}
+.ed-hours .is-gap i {
+  min-height: 6px; /* un día sin cobertura debe verse, aunque su barra valga cero */
+}
+.ed-hours .is-weekend i {
+  opacity: 0.5;
 }
 .ed-slots li {
   display: grid;

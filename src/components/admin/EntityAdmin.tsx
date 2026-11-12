@@ -36,7 +36,7 @@ export function EntityAdmin() {
         </Button>
       </div>
 
-      <div className="flex gap-6 overflow-x-auto border-b border-line" role="tablist" aria-label="Entidades">
+      <div className="ed-noscroll flex gap-6 overflow-x-auto border-b border-line" role="tablist" aria-label="Entidades">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
