@@ -532,7 +532,7 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
 
       {/* ================= PINCELES ================= */}
       {!readOnly && (
-        <div className="mb-5 border border-line bg-surface">
+        <div className="mb-5 overflow-hidden rounded-[18px] border border-line bg-surface">
           <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-4 py-2.5">
             <span className="ed-eyebrow mr-1">Modo</span>
             <button
@@ -573,7 +573,7 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addBrush(); } }}
                 placeholder="Nuevo turno: 09-18"
                 aria-invalid={newCodeErr ? true : undefined}
-                className="ed-num h-9 w-40 rounded border border-slate-300 bg-paper px-2.5 text-xs text-ink placeholder:text-slate-400 focus:border-data focus:outline-none focus:ring-2 focus:ring-brand-600/30"
+                className="ed-num h-9 w-44 rounded-full border border-slate-300 bg-paper px-4 text-xs text-ink placeholder:text-slate-400 focus:border-data focus:outline-none focus:ring-2 focus:ring-brand-600/30"
               />
               <button type="button" onClick={addBrush} disabled={!newCode.trim()} className="ed-brush-tool" title="Crear y usar este turno">
                 <Plus size={14} aria-hidden /> Crear
@@ -586,7 +586,7 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
             {brushGroups.map((g) => (
               <div key={g.label} role="group" aria-label={`Pinceles de ${g.label}`}>
                 <p className="ed-eyebrow mb-1.5">{g.label}</p>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1.5">
                   {g.codes.map((c) => (
                     <button
                       key={c}
