@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useMemo, useState, useRef, useEffect } from "react";
-import { AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2, ChevronDown, ChevronRight, Copy, Plus, Building2, Check, Undo2, Eraser, ArrowRightLeft } from "lucide-react";
+import { AlertTriangle, XCircle, CheckCircle2, Paintbrush, MousePointer2, ChevronDown, ChevronRight, Copy, Plus, Building2, Check, Undo2, Eraser, ArrowRightLeft, Search, X } from "lucide-react";
 import type { Driver, RuleViolation, Shift, ShiftKind } from "@/types";
 import { REST_CODE } from "@/types";
 import { Badge, Button, Field, Input, Modal, Select } from "@/components/ui";
@@ -107,6 +107,10 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
 
   const [zoneId, setZoneId] = useState(zones[0]?.id ?? "");
   const [posIds, setPosIds] = useState<string[]>([]); // vacío = todas las tiendas
+  const [driverQuery, setDriverQuery] = useState(""); // búsqueda de repartidor
+  const [zoneQuery, setZoneQuery] = useState(""); // búsqueda dentro del selector de zona
+  const [posQuery, setPosQuery] = useState(""); // búsqueda dentro del selector de tiendas
+  const zoneDetails = useRef<HTMLDetailsElement>(null);
   const [showComp, setShowComp] = useState(false); // detalle de compensatorios pendientes
   const [view, setView] = useState<number | "all">(0); // índice de semana o "all"
   const [edit, setEdit] = useState<EditState | null>(null);
@@ -245,10 +249,18 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
     [drivers, zoneId, posIds],
   );
 
+  // Repartidores visibles tras la búsqueda (solo oculta filas; la cobertura
+  // sigue calculándose sobre toda la zona con `zoneDrivers`).
+  const visibleDrivers = useMemo(() => {
+    const q = driverQuery.trim().toLowerCase();
+    if (!q) return zoneDrivers;
+    return zoneDrivers.filter((d) => `${d.name} ${d.id}`.toLowerCase().includes(q));
+  }, [zoneDrivers, driverQuery]);
+
   // Repartidores agrupados por tienda (punto de venta base), en el orden de la zona.
   const groups = useMemo(() => {
     const byPos = new Map<string, Driver[]>();
-    for (const d of zoneDrivers) {
+    for (const d of visibleDrivers) {
       const arr = byPos.get(d.basePointOfSaleId) ?? [];
       arr.push(d);
       byPos.set(d.basePointOfSaleId, arr);
@@ -260,7 +272,7 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
     }
     for (const [pid, ds] of byPos) out.push({ id: pid, name: posNameById.get(pid) ?? "Sin punto de venta", drivers: ds });
     return out;
-  }, [zoneDrivers, zonePos, posNameById]);
+  }, [visibleDrivers, zonePos, posNameById]);
 
   // Alerta: domingos trabajados en la zona sin compensatorio dentro de la ventana.
   // Se agrupa por repartidor para no saturar la malla.
@@ -404,23 +416,51 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
 
         <div className="flex flex-wrap items-end gap-3">
           {monthSwitcher && <MonthSwitcher />}
-          <label className="text-sm">
+          {/* Selector de Zona buscable */}
+          <div className="text-sm">
             <span className="ed-eyebrow mb-1.5 block">Zona</span>
-            <Select
-              value={zoneId}
-              onChange={(e) => { setZoneId(e.target.value); setPosIds([]); }}
-              className="w-auto max-w-[16rem] font-bold"
-            >
-              {zones.map((z) => (
-                <option key={z.id} value={z.id}>{z.name}</option>
-              ))}
-            </Select>
-          </label>
+            <details ref={zoneDetails} className="relative" onToggle={(e) => { if ((e.currentTarget as HTMLDetailsElement).open) setZoneQuery(""); }}>
+              <summary className="flex h-10 w-auto min-w-[12rem] max-w-[16rem] cursor-pointer list-none items-center gap-2 rounded border border-slate-300 bg-surface px-3 text-sm font-bold text-ink hover:border-ink [&::-webkit-details-marker]:hidden">
+                <span className="truncate">{zones.find((z) => z.id === zoneId)?.name ?? "Zona"}</span>
+                <ChevronDown size={14} className="ml-auto text-muted" aria-hidden />
+              </summary>
+              <div className="absolute left-0 z-30 mt-1 max-h-72 w-72 overflow-auto border border-line bg-surface p-1.5 shadow-pop">
+                <div className="relative mb-1">
+                  <Search size={14} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted" />
+                  <input
+                    autoFocus
+                    value={zoneQuery}
+                    onChange={(e) => setZoneQuery(e.target.value)}
+                    placeholder="Buscar zona…"
+                    className="h-9 w-full rounded border border-slate-300 bg-paper pl-7 pr-2 text-sm text-ink placeholder:text-muted focus:border-ink focus:outline-none"
+                  />
+                </div>
+                {zones
+                  .filter((z) => z.name.toLowerCase().includes(zoneQuery.trim().toLowerCase()))
+                  .map((z) => (
+                    <button
+                      key={z.id}
+                      type="button"
+                      onClick={() => { setZoneId(z.id); setPosIds([]); setZoneQuery(""); if (zoneDetails.current) zoneDetails.current.open = false; }}
+                      className={cn("flex min-h-[36px] w-full items-center gap-2 px-2 text-left text-sm hover:bg-paper", z.id === zoneId ? "font-bold text-ink" : "text-ink")}
+                    >
+                      <span className={cn("grid h-4 w-4 shrink-0 place-items-center border", z.id === zoneId ? "border-ink bg-ink text-paper" : "border-slate-300")}>
+                        {z.id === zoneId && <Check size={11} />}
+                      </span>
+                      <span className="truncate">{z.name}</span>
+                    </button>
+                  ))}
+                {zones.filter((z) => z.name.toLowerCase().includes(zoneQuery.trim().toLowerCase())).length === 0 && (
+                  <p className="px-2 py-1.5 text-xs text-muted">Sin coincidencias.</p>
+                )}
+              </div>
+            </details>
+          </div>
 
-          {/* Filtro multi-tienda */}
+          {/* Filtro multi-tienda (buscable) */}
           <div className="text-sm">
             <span className="ed-eyebrow mb-1.5 block">Tiendas</span>
-            <details className="relative">
+            <details className="relative" onToggle={(e) => { if ((e.currentTarget as HTMLDetailsElement).open) setPosQuery(""); }}>
               <summary className="flex h-10 cursor-pointer list-none items-center gap-2 rounded border border-slate-300 bg-surface px-3 text-sm text-ink hover:border-ink [&::-webkit-details-marker]:hidden">
                 <Building2 size={14} className="text-muted" aria-hidden />
                 {posIds.length === 0
@@ -431,6 +471,15 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
                 <ChevronDown size={14} className="text-muted" aria-hidden />
               </summary>
               <div className="absolute right-0 z-30 mt-1 max-h-72 w-72 overflow-auto border border-line bg-surface p-1.5 shadow-pop">
+                <div className="relative mb-1">
+                  <Search size={14} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted" />
+                  <input
+                    value={posQuery}
+                    onChange={(e) => setPosQuery(e.target.value)}
+                    placeholder="Buscar tienda…"
+                    className="h-9 w-full rounded border border-slate-300 bg-paper pl-7 pr-2 text-sm text-ink placeholder:text-muted focus:border-ink focus:outline-none"
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={() => setPosIds([])}
@@ -442,7 +491,9 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
                   Todas las tiendas
                 </button>
                 <div className="my-1 h-px bg-line-soft" />
-                {zonePos.map((p) => {
+                {zonePos
+                  .filter((p) => p.name.toLowerCase().includes(posQuery.trim().toLowerCase()))
+                  .map((p) => {
                   const on = posIds.includes(p.id);
                   return (
                     <button
@@ -459,9 +510,31 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
                   );
                 })}
                 {zonePos.length === 0 && <p className="px-2 py-1.5 text-xs text-muted">La zona no tiene puntos de venta.</p>}
+                {zonePos.length > 0 && zonePos.filter((p) => p.name.toLowerCase().includes(posQuery.trim().toLowerCase())).length === 0 && (
+                  <p className="px-2 py-1.5 text-xs text-muted">Sin coincidencias.</p>
+                )}
               </div>
             </details>
           </div>
+
+          {/* Buscar repartidor */}
+          <label className="text-sm">
+            <span className="ed-eyebrow mb-1.5 block">Buscar repartidor</span>
+            <span className="relative block w-56">
+              <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
+              <input
+                value={driverQuery}
+                onChange={(e) => setDriverQuery(e.target.value)}
+                placeholder="Nombre o cédula…"
+                className="h-10 w-full rounded border border-slate-300 bg-surface pl-8 pr-8 text-sm text-ink placeholder:text-muted hover:border-ink focus:border-ink focus:outline-none"
+              />
+              {driverQuery && (
+                <button type="button" onClick={() => setDriverQuery("")} className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-ink" aria-label="Limpiar">
+                  <X size={14} />
+                </button>
+              )}
+            </span>
+          </label>
 
           {!readOnly && prevMonth && (
             <Button
@@ -757,9 +830,16 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
             {groups.length === 0 && (
               <tr>
                 <td colSpan={visibleDates.length + 1} className="px-3 py-12 text-center text-sm text-muted">
-                  {posIds.length ? "No hay repartidores en las tiendas seleccionadas." : "La zona no tiene repartidores."}{" "}
-                  {posIds.length > 0 && (
-                    <button type="button" className="font-bold text-ink underline" onClick={() => setPosIds([])}>Ver todas las tiendas</button>
+                  {driverQuery.trim() ? (
+                    <>Ningún repartidor coincide con “{driverQuery.trim()}”.{" "}
+                      <button type="button" className="font-bold text-ink underline" onClick={() => setDriverQuery("")}>Limpiar búsqueda</button>
+                    </>
+                  ) : posIds.length ? (
+                    <>No hay repartidores en las tiendas seleccionadas.{" "}
+                      <button type="button" className="font-bold text-ink underline" onClick={() => setPosIds([])}>Ver todas las tiendas</button>
+                    </>
+                  ) : (
+                    "La zona no tiene repartidores."
                   )}
                 </td>
               </tr>
