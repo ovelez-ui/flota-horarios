@@ -19,10 +19,10 @@ function make(year: number, monthIndex: number, label: string): MonthDef {
 
 /** Meses habilitados para planificación. */
 export const MONTHS: MonthDef[] = [
-  make(2026, 8, "Septiembre 2026"),
   make(2026, 9, "Octubre 2026"),
   make(2026, 10, "Noviembre 2026"),
   make(2026, 11, "Diciembre 2026"),
+  make(2027, 0, "Enero 2027"),
 ];
 
 /** Mes por defecto: Octubre (es el que tiene la malla real cargada). */
