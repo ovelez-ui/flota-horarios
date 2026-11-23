@@ -39,18 +39,25 @@ export function PointsAdmin() {
 
   function openCreate() {
     setEditing(null);
-    setForm({ name: "", zoneId: zones[0]?.id ?? "", minDriversPerShift: 1 });
+    setForm({ name: "", zoneId: zones[0]?.id ?? "", minDriversPerShift: 1, openTime: "", closeTime: "" });
     setError(null);
     setOpen(true);
   }
   function openEdit(p: PointOfSale) {
     setEditing(p);
-    setForm({ name: p.name, zoneId: p.zoneId, minDriversPerShift: p.minDriversPerShift });
+    setForm({ name: p.name, zoneId: p.zoneId, minDriversPerShift: p.minDriversPerShift, openTime: p.openTime ?? "", closeTime: p.closeTime ?? "" });
     setError(null);
     setOpen(true);
   }
   async function submit() {
     if (!form.name.trim()) return setError("El nombre es obligatorio.");
+    // Si define horario, deben ir ambos y apertura < cierre.
+    if ((form.openTime || form.closeTime) && !(form.openTime && form.closeTime)) {
+      return setError("Indica apertura y cierre, o deja ambos vacíos (tienda sin restricción).");
+    }
+    if (form.openTime && form.closeTime && form.openTime >= form.closeTime) {
+      return setError("La apertura debe ser anterior al cierre.");
+    }
     const res = editing ? await updatePointOfSale(editing.id, form) : await addPointOfSale(form);
     if (!res.ok) return setError(res.error ?? "No se pudo guardar.");
     setOpen(false);
@@ -89,6 +96,7 @@ export function PointsAdmin() {
               <TR>
                 <TH>Punto de venta</TH>
                 <TH>Zona</TH>
+                <TH className="text-center">Horario</TH>
                 <TH className="text-center">Mín/franja</TH>
                 <TH className="text-center">Repart.</TH>
                 <TH className="text-right">Acciones</TH>
@@ -99,6 +107,9 @@ export function PointsAdmin() {
                 <TR key={p.id}>
                   <TD className="font-medium text-slate-800">{p.name}</TD>
                   <TD className="text-slate-600">{zoneName(p.zoneId)}</TD>
+                  <TD className="text-center tabular-nums text-slate-600">
+                    {p.openTime && p.closeTime ? `${p.openTime}–${p.closeTime}` : <span className="text-slate-300">—</span>}
+                  </TD>
                   <TD className="text-center tabular-nums text-slate-600">{p.minDriversPerShift}</TD>
                   <TD className="text-center tabular-nums text-slate-600">
                     {drivers.filter((d) => d.basePointOfSaleId === p.id).length}
@@ -147,6 +158,26 @@ export function PointsAdmin() {
               />
             </Field>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Apertura">
+              <Input
+                type="time"
+                value={form.openTime ?? ""}
+                onChange={(e) => setForm({ ...form, openTime: e.target.value })}
+              />
+            </Field>
+            <Field label="Cierre">
+              <Input
+                type="time"
+                value={form.closeTime ?? ""}
+                onChange={(e) => setForm({ ...form, closeTime: e.target.value })}
+              />
+            </Field>
+          </div>
+          <p className="-mt-1 text-xs text-slate-400">
+            Si defines horario, los turnos que empiecen antes de la apertura o terminen después del cierre
+            quedarán bloqueados. Déjalo vacío para tiendas sin restricción (ej. 24 h).
+          </p>
           {error && <p className="text-sm text-accent">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>

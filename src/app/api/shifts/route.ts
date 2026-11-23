@@ -34,10 +34,12 @@ export async function POST(req: Request) {
   }
 
   const candidate = buildShift({ ...input, weekday: input.weekday || weekdayName(input.date) });
+  const posId = candidate.pointOfSaleId ?? driver.basePointOfSaleId;
   const violations = validateAssignment({
     driver,
     existingShifts: repo.driverShifts(input.driverId),
     candidate,
+    pointOfSale: repo.allPointsOfSale().find((p) => p.id === posId),
   });
 
   if (hasBlockingError(violations)) {

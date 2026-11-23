@@ -1,6 +1,7 @@
 import type {
   AssignmentRules,
   Driver,
+  PointOfSale,
   RuleViolation,
   Shift,
 } from "@/types";
@@ -95,6 +96,19 @@ export interface AssignmentContext {
   /** Turno candidato a asignar. */
   candidate: Shift;
   rules?: Partial<AssignmentRules>;
+  /** Tienda que cubre el turno ese día (para validar su horario de apertura/cierre). */
+  pointOfSale?: PointOfSale;
+}
+
+/** Convierte "HH:MM" a horas decimales; undefined si está vacío o es inválido. */
+export function parseHM(value?: string): number | undefined {
+  if (!value) return undefined;
+  const m = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
+  if (!m) return undefined;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 24 || min > 59) return undefined;
+  return h + min / 60;
 }
 
 /**
@@ -205,6 +219,25 @@ export function validateAssignment(ctx: AssignmentContext): RuleViolation[] {
       severity: "warning",
       message: `Asignación fuera de la zona base del repartidor.`,
     });
+  }
+
+  // 6.b Horario de apertura/cierre de la tienda que cubre ese día.
+  // Si la tienda tiene horario definido, el turno debe caber dentro de él.
+  const pos = ctx.pointOfSale;
+  if (pos && candidate.start != null && candidate.end != null) {
+    const open = parseHM(pos.openTime);
+    const close = parseHM(pos.closeTime);
+    if (open != null && close != null && close > open) {
+      const EPS = 1e-6;
+      // candidate.end puede ser > 24 si el turno cruza la medianoche.
+      if (candidate.start < open - EPS || candidate.end > close + EPS) {
+        violations.push({
+          code: "STORE_HOURS",
+          severity: "error",
+          message: `El turno ${candidate.code} queda fuera del horario de ${pos.name} (${pos.openTime}–${pos.closeTime}).`,
+        });
+      }
+    }
   }
 
   // 7. Compensatorio por domingo trabajado.

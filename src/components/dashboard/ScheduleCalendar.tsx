@@ -355,10 +355,11 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
       weekday: weekdayName(edit.date),
       code: edit.code,
       zoneId: edit.driver.zoneId,
-      pointOfSaleId: edit.driver.basePointOfSaleId,
+      // Valida contra la tienda que cubrirá ese día (su horario de apertura/cierre).
+      pointOfSaleId: edit.posId || edit.driver.basePointOfSaleId,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [edit?.driver.id, edit?.date, edit?.code, shifts]);
+  }, [edit?.driver.id, edit?.date, edit?.code, edit?.posId, shifts]);
 
   async function save() {
     if (!edit) return;

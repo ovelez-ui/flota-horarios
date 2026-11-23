@@ -35,6 +35,10 @@ export interface PointOfSale {
   address?: string;
   /** Mínimo de repartidores activos que debe cubrir cada franja horaria. */
   minDriversPerShift: number;
+  /** Hora de apertura "HH:MM" (vacío = sin restricción, ej. 24h). */
+  openTime?: string;
+  /** Hora de cierre "HH:MM" (vacío = sin restricción). */
+  closeTime?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -132,6 +136,7 @@ export type RuleCode =
   | "ZONE_MISMATCH"
   | "SUNDAY_COMP"
   | "LUNCH_BREAK"
+  | "STORE_HOURS"
   | "DRIVER_UNAVAILABLE";
 
 export interface RuleViolation {

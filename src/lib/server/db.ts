@@ -32,7 +32,8 @@ function connect(): DatabaseSync {
       id TEXT PRIMARY KEY, code TEXT, name TEXT, city TEXT, color TEXT
     );
     CREATE TABLE IF NOT EXISTS points_of_sale (
-      id TEXT PRIMARY KEY, name TEXT, zone_id TEXT, address TEXT, min_drivers INTEGER
+      id TEXT PRIMARY KEY, name TEXT, zone_id TEXT, address TEXT, min_drivers INTEGER,
+      open_time TEXT, close_time TEXT
     );
     CREATE TABLE IF NOT EXISTS drivers (
       id TEXT PRIMARY KEY, name TEXT, base_pos_id TEXT, zone_id TEXT,
@@ -56,6 +57,15 @@ function connect(): DatabaseSync {
     }
   } catch {
     /* ignora: la tabla recién creada ya incluye la columna */
+  }
+
+  // Migración: horario de apertura/cierre por punto de venta.
+  try {
+    const cols = database.prepare("PRAGMA table_info(points_of_sale)").all() as { name: string }[];
+    if (!cols.some((c) => c.name === "open_time")) database.exec("ALTER TABLE points_of_sale ADD COLUMN open_time TEXT");
+    if (!cols.some((c) => c.name === "close_time")) database.exec("ALTER TABLE points_of_sale ADD COLUMN close_time TEXT");
+  } catch {
+    /* ignora */
   }
 
   db = database;
@@ -100,6 +110,7 @@ const toZone = (r: any): Zone => ({ id: r.id, code: r.code, name: r.name, city: 
 const toPos = (r: any): PointOfSale => ({
   id: r.id, name: r.name, zoneId: r.zone_id,
   address: r.address ?? undefined, minDriversPerShift: r.min_drivers,
+  openTime: r.open_time ?? undefined, closeTime: r.close_time ?? undefined,
 });
 const toDriver = (r: any): Driver => ({
   id: r.id, name: r.name, basePointOfSaleId: r.base_pos_id, zoneId: r.zone_id,
@@ -161,12 +172,12 @@ export const repo = {
 
   // --- Puntos de venta ---
   createPos(p: PointOfSale): void {
-    connect().prepare("INSERT INTO points_of_sale (id,name,zone_id,address,min_drivers) VALUES (?,?,?,?,?)")
-      .run(p.id, p.name, p.zoneId, p.address ?? null, p.minDriversPerShift);
+    connect().prepare("INSERT INTO points_of_sale (id,name,zone_id,address,min_drivers,open_time,close_time) VALUES (?,?,?,?,?,?,?)")
+      .run(p.id, p.name, p.zoneId, p.address ?? null, p.minDriversPerShift, p.openTime ?? null, p.closeTime ?? null);
   },
   updatePos(id: string, p: Omit<PointOfSale, "id">): void {
-    connect().prepare("UPDATE points_of_sale SET name=?,zone_id=?,address=?,min_drivers=? WHERE id=?")
-      .run(p.name, p.zoneId, p.address ?? null, p.minDriversPerShift, id);
+    connect().prepare("UPDATE points_of_sale SET name=?,zone_id=?,address=?,min_drivers=?,open_time=?,close_time=? WHERE id=?")
+      .run(p.name, p.zoneId, p.address ?? null, p.minDriversPerShift, p.openTime ?? null, p.closeTime ?? null, id);
   },
   deletePos(id: string): void {
     connect().prepare("DELETE FROM points_of_sale WHERE id = ?").run(id);

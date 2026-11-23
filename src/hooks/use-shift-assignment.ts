@@ -301,11 +301,14 @@ export const useFleetStore = create<FleetState>((set, get) => ({
       };
     }
     const candidate = buildShift({ ...input, weekday: input.weekday || weekdayName(input.date) });
+    const posId = candidate.pointOfSaleId ?? driver.basePointOfSaleId;
+    const pointOfSale = get().pointsOfSale.find((p) => p.id === posId);
     const violations = validateAssignment({
       driver,
       existingShifts: get().driverShifts(input.driverId),
       candidate,
       rules: get().rules,
+      pointOfSale,
     });
     return { ok: !hasBlockingError(violations), violations };
   },
