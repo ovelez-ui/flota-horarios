@@ -12,7 +12,7 @@ import { slugify } from "@/lib/utils";
 
 // --- Mapeo fila (snake_case) <-> dominio ---
 const toZone = (r: any): Zone => ({ id: r.id, code: r.code, name: r.name, city: r.city, color: r.color });
-const toPos = (r: any): PointOfSale => ({ id: r.id, name: r.name, zoneId: r.zone_id, address: r.address ?? undefined, minDriversPerShift: r.min_drivers, openTime: r.open_time ?? undefined, closeTime: r.close_time ?? undefined });
+const toPos = (r: any): PointOfSale => ({ id: r.id, name: r.name, zoneId: r.zone_id, address: r.address ?? undefined, minDriversPerShift: r.min_drivers, openTime: r.open_time ?? undefined, closeTime: r.close_time ?? undefined, hours: r.hours ?? undefined });
 const toDriver = (r: any): Driver => ({ id: r.id, name: r.name, basePointOfSaleId: r.base_pos_id, zoneId: r.zone_id, status: r.status, monthlyHourCap: r.monthly_cap, phone: r.phone ?? undefined });
 const toShift = (r: any): SeedShift => ({ id: r.id, driverId: r.driver_id, date: r.date, weekday: r.weekday, code: r.code, start: r.start_h, end: r.end_h, hours: r.hours, kind: r.kind, pointOfSaleId: r.pos_id ?? undefined, zoneId: r.zone_id ?? undefined, note: r.note ?? undefined });
 
@@ -23,6 +23,7 @@ const posRow = (p: PointOfSale) => {
   // horario aún no existan en la base (ver migración SQL).
   if (p.openTime) row.open_time = p.openTime;
   if (p.closeTime) row.close_time = p.closeTime;
+  if (p.hours && Object.keys(p.hours).length > 0) row.hours = p.hours;
   return row;
 };
 const driverRow = (d: Driver) => ({ id: d.id, name: d.name, base_pos_id: d.basePointOfSaleId, zone_id: d.zoneId, status: d.status, monthly_cap: d.monthlyHourCap, phone: d.phone ?? null });
@@ -104,7 +105,7 @@ export const supabaseSource = {
   async createPos(body: Omit<PointOfSale, "id">) {
     const db = getSupabase();
     const id = await uniqueId("points_of_sale", slugify(body.name, "PDV"));
-    const pos: PointOfSale = { id, name: body.name, zoneId: body.zoneId, address: body.address, minDriversPerShift: Number(body.minDriversPerShift ?? 1), openTime: body.openTime || undefined, closeTime: body.closeTime || undefined };
+    const pos: PointOfSale = { id, name: body.name, zoneId: body.zoneId, address: body.address, minDriversPerShift: Number(body.minDriversPerShift ?? 1), openTime: body.openTime || undefined, closeTime: body.closeTime || undefined, hours: body.hours };
     const { error } = await db.from("points_of_sale").insert(posRow(pos));
     return error ? { ok: false, pos, error: error.message } : { ok: true, pos };
   },
@@ -116,6 +117,7 @@ export const supabaseSource = {
     // Solo se envían si tienen valor, para no romper si la columna aún no existe.
     if (patch.openTime) update.open_time = patch.openTime;
     if (patch.closeTime) update.close_time = patch.closeTime;
+    if (patch.hours && Object.keys(patch.hours).length > 0) update.hours = patch.hours;
     const { data, error } = await db.from("points_of_sale").update(update).eq("id", id).select().single();
     return error ? { ok: false, pos: {} as PointOfSale, error: error.message } : { ok: true, pos: toPos(data) };
   },

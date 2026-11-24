@@ -33,7 +33,7 @@ function connect(): DatabaseSync {
     );
     CREATE TABLE IF NOT EXISTS points_of_sale (
       id TEXT PRIMARY KEY, name TEXT, zone_id TEXT, address TEXT, min_drivers INTEGER,
-      open_time TEXT, close_time TEXT
+      open_time TEXT, close_time TEXT, hours TEXT
     );
     CREATE TABLE IF NOT EXISTS drivers (
       id TEXT PRIMARY KEY, name TEXT, base_pos_id TEXT, zone_id TEXT,
@@ -64,6 +64,7 @@ function connect(): DatabaseSync {
     const cols = database.prepare("PRAGMA table_info(points_of_sale)").all() as { name: string }[];
     if (!cols.some((c) => c.name === "open_time")) database.exec("ALTER TABLE points_of_sale ADD COLUMN open_time TEXT");
     if (!cols.some((c) => c.name === "close_time")) database.exec("ALTER TABLE points_of_sale ADD COLUMN close_time TEXT");
+    if (!cols.some((c) => c.name === "hours")) database.exec("ALTER TABLE points_of_sale ADD COLUMN hours TEXT");
   } catch {
     /* ignora */
   }
@@ -111,7 +112,12 @@ const toPos = (r: any): PointOfSale => ({
   id: r.id, name: r.name, zoneId: r.zone_id,
   address: r.address ?? undefined, minDriversPerShift: r.min_drivers,
   openTime: r.open_time ?? undefined, closeTime: r.close_time ?? undefined,
+  hours: r.hours ? safeJson(r.hours) : undefined,
 });
+
+function safeJson(s: string): any {
+  try { return JSON.parse(s); } catch { return undefined; }
+}
 const toDriver = (r: any): Driver => ({
   id: r.id, name: r.name, basePointOfSaleId: r.base_pos_id, zoneId: r.zone_id,
   status: r.status, monthlyHourCap: r.monthly_cap, phone: r.phone ?? undefined,
@@ -172,12 +178,12 @@ export const repo = {
 
   // --- Puntos de venta ---
   createPos(p: PointOfSale): void {
-    connect().prepare("INSERT INTO points_of_sale (id,name,zone_id,address,min_drivers,open_time,close_time) VALUES (?,?,?,?,?,?,?)")
-      .run(p.id, p.name, p.zoneId, p.address ?? null, p.minDriversPerShift, p.openTime ?? null, p.closeTime ?? null);
+    connect().prepare("INSERT INTO points_of_sale (id,name,zone_id,address,min_drivers,open_time,close_time,hours) VALUES (?,?,?,?,?,?,?,?)")
+      .run(p.id, p.name, p.zoneId, p.address ?? null, p.minDriversPerShift, p.openTime ?? null, p.closeTime ?? null, p.hours ? JSON.stringify(p.hours) : null);
   },
   updatePos(id: string, p: Omit<PointOfSale, "id">): void {
-    connect().prepare("UPDATE points_of_sale SET name=?,zone_id=?,address=?,min_drivers=?,open_time=?,close_time=? WHERE id=?")
-      .run(p.name, p.zoneId, p.address ?? null, p.minDriversPerShift, p.openTime ?? null, p.closeTime ?? null, id);
+    connect().prepare("UPDATE points_of_sale SET name=?,zone_id=?,address=?,min_drivers=?,open_time=?,close_time=?,hours=? WHERE id=?")
+      .run(p.name, p.zoneId, p.address ?? null, p.minDriversPerShift, p.openTime ?? null, p.closeTime ?? null, p.hours ? JSON.stringify(p.hours) : null, id);
   },
   deletePos(id: string): void {
     connect().prepare("DELETE FROM points_of_sale WHERE id = ?").run(id);

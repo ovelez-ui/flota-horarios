@@ -35,10 +35,29 @@ export interface PointOfSale {
   address?: string;
   /** Mínimo de repartidores activos que debe cubrir cada franja horaria. */
   minDriversPerShift: number;
-  /** Hora de apertura "HH:MM" (vacío = sin restricción, ej. 24h). */
+  /** Horario único "HH:MM" (compatibilidad; se usa si no hay `hours`). */
   openTime?: string;
-  /** Hora de cierre "HH:MM" (vacío = sin restricción). */
   closeTime?: string;
+  /** Horario de apertura/cierre por tipo de día (vacío = sin restricción). */
+  hours?: StoreHours;
+}
+
+/** Ventana horaria de un día: apertura y cierre "HH:MM" (vacío = sin restricción). */
+export interface DayWindow {
+  open?: string;
+  close?: string;
+}
+
+/** Horario de una tienda según el tipo de día. */
+export interface StoreHours {
+  /** Lunes a viernes. */
+  weekday?: DayWindow;
+  /** Sábado. */
+  sat?: DayWindow;
+  /** Domingo. */
+  sun?: DayWindow;
+  /** Días festivos (tiene prioridad sobre el día de la semana). */
+  holiday?: DayWindow;
 }
 
 // ---------------------------------------------------------------------------

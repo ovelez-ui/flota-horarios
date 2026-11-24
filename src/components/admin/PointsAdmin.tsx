@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
-import type { PointOfSale } from "@/types";
+import type { PointOfSale, StoreHours } from "@/types";
 import { useFleetStore } from "@/hooks/use-shift-assignment";
 import {
   Button, Card, CardContent, Field, Input, Modal, Select,
@@ -10,6 +10,60 @@ import {
 } from "@/components/ui";
 
 type Form = Omit<PointOfSale, "id">;
+
+type DayKey = "weekday" | "sat" | "sun" | "holiday";
+type HrsState = Record<DayKey, { open: string; close: string }>;
+
+const DAY_ROWS: { key: DayKey; label: string }[] = [
+  { key: "weekday", label: "Lun–Vie" },
+  { key: "sat", label: "Sábado" },
+  { key: "sun", label: "Domingo" },
+  { key: "holiday", label: "Festivos" },
+];
+
+const EMPTY_HRS = (): HrsState => ({
+  weekday: { open: "", close: "" },
+  sat: { open: "", close: "" },
+  sun: { open: "", close: "" },
+  holiday: { open: "", close: "" },
+});
+
+/** Inicializa el editor de horario desde una tienda (o vacío). */
+function hrsFromPos(p?: PointOfSale | null): HrsState {
+  const out = EMPTY_HRS();
+  if (!p) return out;
+  if (p.hours) {
+    for (const k of ["weekday", "sat", "sun", "holiday"] as DayKey[]) {
+      out[k] = { open: p.hours[k]?.open ?? "", close: p.hours[k]?.close ?? "" };
+    }
+  } else if (p.openTime || p.closeTime) {
+    out.weekday = { open: p.openTime ?? "", close: p.closeTime ?? "" };
+  }
+  return out;
+}
+
+/** Construye el objeto `hours` descartando días sin apertura+cierre. */
+function cleanHours(s: HrsState): StoreHours | undefined {
+  const out: StoreHours = {};
+  for (const k of ["weekday", "sat", "sun", "holiday"] as DayKey[]) {
+    const w = s[k];
+    if (w.open && w.close) out[k] = { open: w.open, close: w.close };
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+/** Resumen compacto del horario para la tabla. */
+function hoursSummary(p: PointOfSale): { main: string; extra: string[] } {
+  const h = cleanHours(hrsFromPos(p));
+  if (!h) return { main: "—", extra: [] };
+  const fmt = (k: DayKey) => (h[k] ? `${h[k]!.open}–${h[k]!.close}` : null);
+  const labels: Record<DayKey, string> = { weekday: "L-V", sat: "Sáb", sun: "Dom", holiday: "Fest" };
+  const main = h.weekday ? `L-V ${fmt("weekday")}` : "—";
+  const extra = (["sat", "sun", "holiday"] as DayKey[])
+    .filter((k) => h[k])
+    .map((k) => `${labels[k]} ${fmt(k)}`);
+  return { main, extra };
+}
 
 export function PointsAdmin() {
   const zones = useFleetStore((s) => s.zones);
@@ -24,6 +78,7 @@ export function PointsAdmin() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<PointOfSale | null>(null);
   const [form, setForm] = useState<Form>({ name: "", zoneId: zones[0]?.id ?? "", minDriversPerShift: 1 });
+  const [hrs, setHrs] = useState<HrsState>(EMPTY_HRS());
   const [error, setError] = useState<string | null>(null);
 
   const zoneName = (id: string) => zones.find((z) => z.id === id)?.name ?? "—";
@@ -39,26 +94,33 @@ export function PointsAdmin() {
 
   function openCreate() {
     setEditing(null);
-    setForm({ name: "", zoneId: zones[0]?.id ?? "", minDriversPerShift: 1, openTime: "", closeTime: "" });
+    setForm({ name: "", zoneId: zones[0]?.id ?? "", minDriversPerShift: 1 });
+    setHrs(EMPTY_HRS());
     setError(null);
     setOpen(true);
   }
   function openEdit(p: PointOfSale) {
     setEditing(p);
-    setForm({ name: p.name, zoneId: p.zoneId, minDriversPerShift: p.minDriversPerShift, openTime: p.openTime ?? "", closeTime: p.closeTime ?? "" });
+    setForm({ name: p.name, zoneId: p.zoneId, minDriversPerShift: p.minDriversPerShift });
+    setHrs(hrsFromPos(p));
     setError(null);
     setOpen(true);
   }
   async function submit() {
     if (!form.name.trim()) return setError("El nombre es obligatorio.");
-    // Si define horario, deben ir ambos y apertura < cierre.
-    if ((form.openTime || form.closeTime) && !(form.openTime && form.closeTime)) {
-      return setError("Indica apertura y cierre, o deja ambos vacíos (tienda sin restricción).");
+    // Cada día con horario debe tener apertura y cierre, y apertura < cierre.
+    for (const { key, label } of DAY_ROWS) {
+      const w = hrs[key];
+      if ((w.open || w.close) && !(w.open && w.close)) {
+        return setError(`Completa apertura y cierre en ${label}, o deja ambos vacíos.`);
+      }
+      if (w.open && w.close && w.open >= w.close) {
+        return setError(`En ${label}, la apertura debe ser anterior al cierre.`);
+      }
     }
-    if (form.openTime && form.closeTime && form.openTime >= form.closeTime) {
-      return setError("La apertura debe ser anterior al cierre.");
-    }
-    const res = editing ? await updatePointOfSale(editing.id, form) : await addPointOfSale(form);
+    // El horario nuevo se guarda en `hours`; se limpia el horario único antiguo.
+    const payload: Form = { ...form, hours: cleanHours(hrs), openTime: undefined, closeTime: undefined };
+    const res = editing ? await updatePointOfSale(editing.id, payload) : await addPointOfSale(payload);
     if (!res.ok) return setError(res.error ?? "No se pudo guardar.");
     setOpen(false);
   }
@@ -107,8 +169,19 @@ export function PointsAdmin() {
                 <TR key={p.id}>
                   <TD className="font-medium text-slate-800">{p.name}</TD>
                   <TD className="text-slate-600">{zoneName(p.zoneId)}</TD>
-                  <TD className="text-center tabular-nums text-slate-600">
-                    {p.openTime && p.closeTime ? `${p.openTime}–${p.closeTime}` : <span className="text-slate-300">—</span>}
+                  <TD className="text-center text-xs tabular-nums text-slate-600">
+                    {(() => {
+                      const s = hoursSummary(p);
+                      if (s.main === "—" && s.extra.length === 0) return <span className="text-slate-300">—</span>;
+                      return (
+                        <div className="leading-tight">
+                          <div>{s.main}</div>
+                          {s.extra.map((x) => (
+                            <div key={x} className="text-[10px] text-slate-400">{x}</div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </TD>
                   <TD className="text-center tabular-nums text-slate-600">{p.minDriversPerShift}</TD>
                   <TD className="text-center tabular-nums text-slate-600">
@@ -158,26 +231,33 @@ export function PointsAdmin() {
               />
             </Field>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Apertura">
-              <Input
-                type="time"
-                value={form.openTime ?? ""}
-                onChange={(e) => setForm({ ...form, openTime: e.target.value })}
-              />
-            </Field>
-            <Field label="Cierre">
-              <Input
-                type="time"
-                value={form.closeTime ?? ""}
-                onChange={(e) => setForm({ ...form, closeTime: e.target.value })}
-              />
-            </Field>
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-slate-700">Horario de atención</p>
+            <div className="space-y-2 rounded-lg border border-slate-200 p-3">
+              <div className="grid grid-cols-[5.5rem_1fr_1fr] items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                <span>Día</span><span>Apertura</span><span>Cierre</span>
+              </div>
+              {DAY_ROWS.map(({ key, label }) => (
+                <div key={key} className="grid grid-cols-[5.5rem_1fr_1fr] items-center gap-2">
+                  <span className="text-sm text-slate-600">{label}</span>
+                  <Input
+                    type="time"
+                    value={hrs[key].open}
+                    onChange={(e) => setHrs({ ...hrs, [key]: { ...hrs[key], open: e.target.value } })}
+                  />
+                  <Input
+                    type="time"
+                    value={hrs[key].close}
+                    onChange={(e) => setHrs({ ...hrs, [key]: { ...hrs[key], close: e.target.value } })}
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="mt-1.5 text-xs text-slate-400">
+              Los turnos fuera de la ventana del día quedan bloqueados. Deja un día vacío para no restringirlo
+              (ej. 24 h). Festivos tiene prioridad sobre el día de la semana.
+            </p>
           </div>
-          <p className="-mt-1 text-xs text-slate-400">
-            Si defines horario, los turnos que empiecen antes de la apertura o terminen después del cierre
-            quedarán bloqueados. Déjalo vacío para tiendas sin restricción (ej. 24 h).
-          </p>
           {error && <p className="text-sm text-accent">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>

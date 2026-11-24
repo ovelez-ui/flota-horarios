@@ -1,5 +1,6 @@
 import type {
   AssignmentRules,
+  DayWindow,
   Driver,
   PointOfSale,
   RuleViolation,
@@ -8,6 +9,7 @@ import type {
 import { DEFAULT_RULES } from "@/types";
 import { parseShiftCode, isRestCode } from "@/lib/shift-catalog";
 import { daysBetween, parseISO } from "@/lib/date-utils";
+import { isHoliday } from "@/lib/holidays";
 
 /** Código de novedad que representa un día compensatorio. */
 const COMP_CODE = "COMP";
@@ -109,6 +111,29 @@ export function parseHM(value?: string): number | undefined {
   const min = Number(m[2]);
   if (h > 24 || min > 59) return undefined;
   return h + min / 60;
+}
+
+/** ¿La ventana tiene apertura y cierre válidos? */
+function hasWindow(w?: DayWindow): boolean {
+  return !!(w && w.open && w.close);
+}
+
+/**
+ * Ventana horaria aplicable a una fecha según el tipo de día.
+ * Prioridad: festivo → sábado/domingo → lunes-viernes. Si la tienda no tiene
+ * `hours`, usa el horario único (compatibilidad). undefined = sin restricción.
+ */
+export function storeWindowFor(pos: PointOfSale, dateISO: string): DayWindow | undefined {
+  const h = pos.hours;
+  if (!h) {
+    // Compatibilidad: horario único para todos los días.
+    return pos.openTime || pos.closeTime ? { open: pos.openTime, close: pos.closeTime } : undefined;
+  }
+  if (isHoliday(dateISO) && hasWindow(h.holiday)) return h.holiday;
+  const day = parseISO(dateISO).getDay(); // 0=domingo, 6=sábado
+  if (day === 6) return hasWindow(h.sat) ? h.sat : undefined;
+  if (day === 0) return hasWindow(h.sun) ? h.sun : undefined;
+  return hasWindow(h.weekday) ? h.weekday : undefined;
 }
 
 /**
@@ -222,11 +247,12 @@ export function validateAssignment(ctx: AssignmentContext): RuleViolation[] {
   }
 
   // 6.b Horario de apertura/cierre de la tienda que cubre ese día.
-  // Si la tienda tiene horario definido, el turno debe caber dentro de él.
+  // La ventana depende del tipo de día (Lun-Vie / Sáb / Dom / Festivo).
   const pos = ctx.pointOfSale;
   if (pos && candidate.start != null && candidate.end != null) {
-    const open = parseHM(pos.openTime);
-    const close = parseHM(pos.closeTime);
+    const win = storeWindowFor(pos, candidate.date);
+    const open = parseHM(win?.open);
+    const close = parseHM(win?.close);
     if (open != null && close != null && close > open) {
       const EPS = 1e-6;
       // candidate.end puede ser > 24 si el turno cruza la medianoche.
@@ -234,7 +260,7 @@ export function validateAssignment(ctx: AssignmentContext): RuleViolation[] {
         violations.push({
           code: "STORE_HOURS",
           severity: "error",
-          message: `El turno ${candidate.code} queda fuera del horario de ${pos.name} (${pos.openTime}–${pos.closeTime}).`,
+          message: `El turno ${candidate.code} queda fuera del horario de ${pos.name} ese día (${win!.open}–${win!.close}).`,
         });
       }
     }
