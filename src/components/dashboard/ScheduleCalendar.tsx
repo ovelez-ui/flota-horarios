@@ -49,6 +49,8 @@ function cellLabel(shift: Shift): string {
 const COL_MIN = 34;
 // Ancho fijo de la primera columna (nombre del repartidor / tienda).
 const NAME_COL = 240;
+// Ancho fijo de la última columna (horas del rango visible).
+const HOURS_COL = 76;
 // Valor de pincel especial para borrar (vaciar) una celda.
 const ERASE = "__ERASE__";
 
@@ -316,6 +318,26 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
     }
     return counts;
   }, [byDriver, zoneDrivers]);
+
+  // Horas trabajadas por repartidor: del rango visible (semana/mes) y del mes
+  // completo (para marcar el tope mensual excedido).
+  const visibleSet = useMemo(() => new Set(visibleDates), [visibleDates]);
+  const hoursByDriver = useMemo(() => {
+    const map = new Map<string, { visible: number; month: number }>();
+    for (const d of zoneDrivers) {
+      const m = byDriver.get(d.id);
+      let visible = 0;
+      let month = 0;
+      if (m) for (const [date, s] of m) { month += s.hours; if (visibleSet.has(date)) visible += s.hours; }
+      map.set(d.id, { visible, month });
+    }
+    return map;
+  }, [zoneDrivers, byDriver, visibleSet]);
+  const teamVisibleHours = useMemo(
+    () => zoneDrivers.reduce((t, d) => t + (hoursByDriver.get(d.id)?.visible ?? 0), 0),
+    [zoneDrivers, hoursByDriver],
+  );
+  const round1 = (n: number) => Math.round(n * 10) / 10;
 
   // Días del mes en los que nadie de la zona (y tiendas filtradas) está en turno.
   const gapDays = zoneDrivers.length === 0 ? 0 : dates.filter((d) => (coverage.get(d) ?? 0) === 0).length;
@@ -722,13 +744,14 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
       <div className="overflow-auto border border-t-0 border-line bg-surface">
         <table
           className="w-full table-fixed border-collapse text-xs"
-          style={{ minWidth: NAME_COL + visibleDates.length * COL_MIN }}
+          style={{ minWidth: NAME_COL + visibleDates.length * COL_MIN + HOURS_COL }}
         >
           <colgroup>
             <col style={{ width: NAME_COL }} />
             {visibleDates.map((d) => (
               <col key={d} />
             ))}
+            <col style={{ width: HOURS_COL }} />
           </colgroup>
           <thead>
             <tr>
@@ -756,6 +779,9 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
                   </th>
                 );
               })}
+              <th scope="col" className="ed-eyebrow sticky right-0 z-20 border-b border-l-2 border-l-line bg-surface px-1 py-2 text-center font-medium !text-ink" title="Horas del rango visible">
+                Horas
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -768,7 +794,7 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
                       <span title={g.name}>{g.name} <span className="text-muted">· {g.drivers.length}</span></span>
                     </span>
                   </th>
-                  <td colSpan={visibleDates.length} className="border-y border-line bg-paper" />
+                  <td colSpan={visibleDates.length + 1} className="border-y border-line bg-paper" />
                 </tr>
                 {g.drivers.map((driver) => {
                   const m = byDriver.get(driver.id);
@@ -823,6 +849,22 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
                           </td>
                         );
                       })}
+                      {(() => {
+                        const h = hoursByDriver.get(driver.id) ?? { visible: 0, month: 0 };
+                        const cap = rules.monthlyHourCap ?? driver.monthlyHourCap;
+                        const over = cap > 0 && h.month > cap;
+                        return (
+                          <td
+                            className={cn(
+                              "ed-num sticky right-0 z-10 border-b border-l-2 border-l-line text-center text-xs font-bold tabular-nums",
+                              over ? "bg-accent-soft text-signal" : "bg-surface text-ink",
+                            )}
+                            title={`Horas visibles: ${round1(h.visible)} h · Mes: ${round1(h.month)}/${cap} h${over ? " · supera el tope" : ""}`}
+                          >
+                            {round1(h.visible)}
+                          </td>
+                        );
+                      })()}
                     </tr>
                   );
                 })}
@@ -830,7 +872,7 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
             ))}
             {groups.length === 0 && (
               <tr>
-                <td colSpan={visibleDates.length + 1} className="px-3 py-12 text-center text-sm text-muted">
+                <td colSpan={visibleDates.length + 2} className="px-3 py-12 text-center text-sm text-muted">
                   {driverQuery.trim() ? (
                     <>Ningún repartidor coincide con “{driverQuery.trim()}”.{" "}
                       <button type="button" className="font-bold text-ink underline" onClick={() => setDriverQuery("")}>Limpiar búsqueda</button>
@@ -869,6 +911,12 @@ export function ScheduleCalendar({ readOnly = false, monthSwitcher = true }: { r
                     </td>
                   );
                 })}
+                <td
+                  className="ed-num sticky right-0 z-10 border-l-2 border-l-line border-t border-line bg-ink text-center text-xs font-bold tabular-nums text-paper"
+                  title={`Total de horas del equipo en el rango visible: ${round1(teamVisibleHours)} h`}
+                >
+                  {round1(teamVisibleHours)}
+                </td>
               </tr>
             </tfoot>
           )}
